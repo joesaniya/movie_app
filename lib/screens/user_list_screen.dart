@@ -36,14 +36,11 @@ class _UserListScreenState extends State<UserListScreen> {
         listen: false,
       );
 
-    
       usersProvider.loadLocalUsers();
 
-      
       if (!connectivityProvider.isOnline) {
         usersProvider.loadCachedApiUsers();
       } else {
-    
         usersProvider.fetchUsers();
       }
     });
@@ -182,7 +179,10 @@ class _UserListScreenState extends State<UserListScreen> {
                                 ),
                               ],
                               child: MovieListScreen(
-                                userId: user.id?.toString() ?? user.firstName,
+                                userId:
+                                    user.localId ??
+                                    user.id?.toString() ??
+                                    user.firstName,
                                 userName: user.fullName,
                               ),
                             ),

@@ -57,6 +57,7 @@ class PaginatedUsersProvider extends ChangeNotifier {
             firstName: firstName,
             lastName: lastName,
             avatar: _generateAvatarUrl(firstName, lastName),
+            localId: lu.id, // Preserve the local UUID for offline users
           );
         })
         .toList();
@@ -97,7 +98,7 @@ class PaginatedUsersProvider extends ChangeNotifier {
 
       if (response.data.isNotEmpty) {
         _users.addAll(response.data);
-       
+
         await _localStorageService.cacheApiUsers(_users);
       }
 
@@ -134,7 +135,6 @@ class PaginatedUsersProvider extends ChangeNotifier {
     }
   }
 
-  
   Future<void> loadCachedApiUsers() async {
     try {
       final cachedUsers = await _localStorageService.getCachedApiUsers();

@@ -4,6 +4,7 @@ class User {
   final String firstName;
   final String lastName;
   final String avatar;
+  final String? localId; // UUID for offline-created users
 
   User({
     this.id,
@@ -11,6 +12,7 @@ class User {
     required this.firstName,
     required this.lastName,
     required this.avatar,
+    this.localId,
   });
 
   factory User.fromJson(Map<String, dynamic> json) => User(
@@ -19,6 +21,7 @@ class User {
     firstName: json['first_name'] as String? ?? '',
     lastName: json['last_name'] as String? ?? '',
     avatar: json['avatar'] as String? ?? '',
+    localId: json['localId'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -27,6 +30,7 @@ class User {
     'first_name': firstName,
     'last_name': lastName,
     'avatar': avatar,
+    'localId': localId,
   };
 
   String get fullName => '$firstName $lastName';

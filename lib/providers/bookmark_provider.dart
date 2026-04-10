@@ -63,6 +63,13 @@ class BookmarkProvider extends ChangeNotifier {
     String? imdbRating,
   }) async {
     try {
+      // Validate that userId is provided and not empty
+      if (userId.isEmpty) {
+        _error = 'A valid user must be selected to bookmark movies';
+        notifyListeners();
+        return;
+      }
+
       final bookmark = await _localStorageService.bookmarkMovie(
         userId: userId,
         movieImdbId: movieImdbId,

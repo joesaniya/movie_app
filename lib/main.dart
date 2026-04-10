@@ -19,9 +19,13 @@ void main() async {
 
   _setupLogging();
 
+  // Initialize WorkManager before service locator
+  // This must happen before any async operations that might trigger sync
+  await BackgroundSyncService.initialize();
+
   await setupServiceLocator();
 
-
+  // Register periodic sync task (15 minute intervals when device is connected)
   await BackgroundSyncService.registerPeriodicSync();
 
   runApp(const MovieTaskApp());

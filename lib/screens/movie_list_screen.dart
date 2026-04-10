@@ -1,5 +1,4 @@
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
@@ -8,7 +7,8 @@ import '../providers/movie_provider.dart';
 import '../providers/bookmark_provider.dart';
 import '../providers/connectivity_provider.dart';
 import '../config/app_theme.dart';
-import '../widgets/loading_widgets.dart' as loading_widgets;
+import '../config/ui_components.dart';
+import '../widgets/loading_widgets.dart' as lw;
 import 'movie_detail_screen.dart';
 import 'bookmarks_screen.dart';
 
@@ -16,40 +16,34 @@ class MovieListScreen extends StatefulWidget {
   final String userId;
   final String userName;
 
-  const MovieListScreen({
-    super.key,
-    required this.userId,
-    required this.userName,
-  });
+  const MovieListScreen({super.key, required this.userId, required this.userName});
 
   @override
   State<MovieListScreen> createState() => _MovieListScreenState();
 }
 
-class _MovieListScreenState extends State<MovieListScreen> {
+class _MovieListScreenState extends State<MovieListScreen> with TickerProviderStateMixin {
   late ScrollController _scrollController;
   late TextEditingController _searchController;
+  late AnimationController _headerAnim;
+  late Animation<double> _headerFade;
   bool _isSearching = false;
+  bool _searchFocused = false;
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
+    _scrollController = ScrollController()..addListener(_onScroll);
     _searchController = TextEditingController();
-    _scrollController.addListener(_onScroll);
+    _headerAnim = AnimationController(duration: const Duration(milliseconds: 600), vsync: this);
+    _headerFade = CurvedAnimation(parent: _headerAnim, curve: Curves.easeOut);
+    _headerAnim.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final moviesProvider = Provider.of<PaginatedMoviesProvider>(
-        context,
-        listen: false,
-      );
-      final bookmarkProvider = Provider.of<BookmarkProvider>(
-        context,
-        listen: false,
-      );
-
-      await moviesProvider.getTrendingMovies();
-      await bookmarkProvider.loadUserBookmarks(widget.userId);
+      final mp = Provider.of<PaginatedMoviesProvider>(context, listen: false);
+      final bk = Provider.of<BookmarkProvider>(context, listen: false);
+      await mp.getTrendingMovies();
+      await bk.loadUserBookmarks(widget.userId);
     });
   }
 
@@ -57,214 +51,126 @@ class _MovieListScreenState extends State<MovieListScreen> {
   void dispose() {
     _scrollController.dispose();
     _searchController.dispose();
+    _headerAnim.dispose();
     super.dispose();
   }
 
   void _onScroll() {
-    final moviesProvider = Provider.of<PaginatedMoviesProvider>(
-      context,
-      listen: false,
-    );
-
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 500 &&
-        moviesProvider.hasMore &&
-        !moviesProvider.isLoading) {
+    final mp = Provider.of<PaginatedMoviesProvider>(context, listen: false);
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 500 && mp.hasMore && !mp.isLoading) {
       if (_isSearching && _searchController.text.isNotEmpty) {
-        moviesProvider.searchMovies(query: _searchController.text);
+        mp.searchMovies(query: _searchController.text);
       } else {
-        moviesProvider.getTrendingMovies();
+        mp.getTrendingMovies();
       }
     }
   }
 
   void _performSearch(String? query) {
-    final finalQuery = (query ?? _searchController.text).trim();
-    log('Performing search with query: $finalQuery');
-
-    if (finalQuery.isEmpty) {
+    final q = (query ?? _searchController.text).trim();
+    log('Search: $q');
+    if (q.isEmpty) {
       setState(() => _isSearching = false);
-      Provider.of<PaginatedMoviesProvider>(
-        context,
-        listen: false,
-      ).getTrendingMovies(refresh: true);
+      Provider.of<PaginatedMoviesProvider>(context, listen: false).getTrendingMovies(refresh: true);
     } else {
       setState(() => _isSearching = true);
-      Provider.of<PaginatedMoviesProvider>(
-        context,
-        listen: false,
-      ).searchMovies(query: finalQuery, refresh: true);
+      Provider.of<PaginatedMoviesProvider>(context, listen: false).searchMovies(query: q, refresh: true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Movies', style: TextStyle(fontWeight: FontWeight.w700)),
-            Text(
-              'for ${widget.userName}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w400,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Center(
-              child: Tooltip(
-                message: 'View Bookmarks',
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: IconButton(
-                    icon: Icon(Icons.bookmark, color: AppTheme.accentColor),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const BookmarksScreen(),
-                        ),
+      backgroundColor: AppTheme.inkBlack,
+      body: Stack(
+        children: [
+          Positioned.fill(child: Container(decoration: const BoxDecoration(gradient: AppTheme.pageGradient))),
+          SafeArea(
+            child: Column(
+              children: [
+                Consumer<ConnectivityProvider>(
+                  builder: (_, conn, __) => !conn.isOnline ? const lw.NoInternetWidget() : const SizedBox.shrink(),
+                ),
+                FadeTransition(opacity: _headerFade, child: _buildHeader()),
+                _buildSearchBar(),
+                const SizedBox(height: 4),
+                Expanded(
+                  child: Consumer<PaginatedMoviesProvider>(
+                    builder: (_, mp, __) {
+                      if (mp.movies.isEmpty && mp.isLoading) return const lw.LoadingWidget(message: 'Fetching films...');
+                      if (mp.movies.isEmpty && mp.error != null) return lw.ErrorWidget(message: mp.error!, onRetry: () => _performSearch(_searchController.text));
+                      if (mp.movies.isEmpty) return const lw.EmptyWidget(title: 'No Films Found', message: 'Try a different search term.', icon: Icons.movie_outlined);
+                      return ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        itemCount: mp.movies.length + (mp.hasMore ? 1 : 0),
+                        itemBuilder: (_, i) {
+                          if (i == mp.movies.length) return const Padding(padding: EdgeInsets.all(20), child: lw.LoadingWidget(isSmall: true));
+                          return TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0, end: 1),
+                            duration: Duration(milliseconds: 200 + (i % 8) * 40),
+                            curve: Curves.easeOut,
+                            builder: (_, v, child) => Opacity(opacity: v, child: Transform.translate(offset: Offset(0, 14 * (1 - v)), child: child)),
+                            child: MovieCard(
+                              movie: mp.movies[i],
+                              userId: widget.userId,
+                              onTap: () => Navigator.push(context, MaterialPageRoute(
+                                builder: (_) => MovieDetailScreen(imdbId: mp.movies[i].imdbId, movie: mp.movies[i], userId: widget.userId),
+                              )),
+                            ),
+                          );
+                        },
                       );
                     },
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
       ),
-      body: Column(
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Row(
         children: [
-          Consumer<ConnectivityProvider>(
-            builder: (context, connectivity, _) {
-              return Column(
-                children: [
-                  if (!connectivity.isOnline)
-                    const loading_widgets.NoInternetWidget(),
-                ],
-              );
-            },
-          ),
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: Colors.white,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                border: Border.all(color: Colors.grey.shade200),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (value) {
-                  setState(() {});
-
-                  _performSearch(value);
-                },
-                onSubmitted: (value) {
-                  _performSearch(value);
-                },
-                decoration: InputDecoration(
-                  hintText: 'Search movies...',
-                  prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: Icon(Icons.close, color: Colors.grey.shade400),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() {});
-                            _performSearch('');
-                          },
-                        )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  hintStyle: TextStyle(color: Colors.grey.shade400),
-                ),
-              ),
+          FilmBackButton(),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('The Collection', style: TextStyle(fontFamily: 'PlayfairDisplay', fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.cream)),
+                Text('curated for ${widget.userName}', style: const TextStyle(fontFamily: 'DMSans', fontSize: 11, color: AppTheme.dustGray)),
+              ],
             ),
           ),
-
-          Expanded(
-            child: Consumer<PaginatedMoviesProvider>(
-              builder: (context, moviesProvider, _) {
-                if (moviesProvider.movies.isEmpty && moviesProvider.isLoading) {
-                  return const loading_widgets.LoadingWidget(
-                    message: 'Loading movies...',
-                  );
-                }
-
-                if (moviesProvider.movies.isEmpty &&
-                    moviesProvider.error != null) {
-                  return loading_widgets.ErrorWidget(
-                    message: moviesProvider.error!,
-                    onRetry: () => _performSearch(_searchController.text),
-                  );
-                }
-
-                if (moviesProvider.movies.isEmpty) {
-                  return loading_widgets.EmptyWidget(
-                    title: 'No Movies Found',
-                    message: 'Try a different search or browse trending movies',
-                    icon: Icons.movie_outlined,
-                  );
-                }
-
-                return ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount:
-                      moviesProvider.movies.length +
-                      (moviesProvider.hasMore ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (index == moviesProvider.movies.length) {
-                      return Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: const loading_widgets.LoadingWidget(
-                          isSmall: true,
-                        ),
-                      );
-                    }
-
-                    final movie = moviesProvider.movies[index];
-                    return MovieCard(
-                      movie: movie,
-                      userId: widget.userId,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => MovieDetailScreen(
-                              imdbId: movie.imdbId,
-                              movie: movie,
-                              userId: widget.userId,
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
+          // Bookmarks button
+          GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BookmarksScreen())),
+            child: Consumer<BookmarkProvider>(
+              builder: (_, bk, __) {
+                final count = bk.bookmarks.length;
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: AppTheme.crimson.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    border: Border.all(color: AppTheme.crimson.withOpacity(0.35), width: 0.5),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.bookmark_rounded, color: AppTheme.crimsonSoft, size: 16),
+                      if (count > 0) ...[
+                        const SizedBox(width: 5),
+                        Text('$count', style: const TextStyle(fontFamily: 'DMSans', fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.crimsonSoft)),
+                      ],
+                    ],
+                  ),
                 );
               },
             ),
@@ -273,304 +179,34 @@ class _MovieListScreenState extends State<MovieListScreen> {
       ),
     );
   }
-}
 
-class MovieCard extends StatefulWidget {
-  final Movie movie;
-  final String userId;
-  final VoidCallback onTap;
-
-  const MovieCard({
-    super.key,
-    required this.movie,
-    required this.userId,
-    required this.onTap,
-  });
-
-  @override
-  State<MovieCard> createState() => _MovieCardState();
-}
-
-class _MovieCardState extends State<MovieCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _hoverController;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _hoverController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.02,
-    ).animate(CurvedAnimation(parent: _hoverController, curve: Curves.easeOut));
-  }
-
-  @override
-  void dispose() {
-    _hoverController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: _scaleAnimation,
-      child: GestureDetector(
-        onTapDown: (_) => _hoverController.forward(),
-        onTapUp: (_) {
-          _hoverController.reverse();
-          widget.onTap();
-        },
-        onTapCancel: () => _hoverController.reverse(),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 20),
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Focus(
+        onFocusChange: (v) => setState(() => _searchFocused = v),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            color: AppTheme.graphite,
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            border: Border.all(color: _searchFocused ? AppTheme.gold.withOpacity(0.6) : AppTheme.warmGray.withOpacity(0.4), width: _searchFocused ? 1 : 0.5),
+            boxShadow: _searchFocused ? AppTheme.goldGlow : null,
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Stack(
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        height: 220,
-                        color: Colors.grey[200],
-                        child: widget.movie.hasPoster
-                            ? CachedNetworkImage(
-                                imageUrl: widget.movie.poster,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) =>
-                                    const loading_widgets.LoadingShimmer(),
-                                errorWidget: (context, url, error) => Container(
-                                  color: Colors.grey[300],
-                                  child: const Icon(
-                                    Icons.broken_image,
-                                    size: 64,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              )
-                            : Container(
-                                color: Colors.grey[300],
-                                child: const Icon(
-                                  Icons.movie,
-                                  size: 80,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                      ),
-
-                      Container(
-                        width: double.infinity,
-                        height: 220,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.3),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppTheme.accentColor,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.accentColor.withValues(
-                                  alpha: 0.4,
-                                ),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            widget.movie.type.toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.movie.title,
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                              ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppTheme.primaryColor.withValues(
-                                  alpha: 0.1,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.calendar_today,
-                                    size: 14,
-                                    color: AppTheme.primaryColor,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    widget.movie.year,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppTheme.primaryColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.local_movies,
-                                      size: 14,
-                                      color: Colors.grey,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        widget.movie.imdbId,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.grey,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                  horizontal: 0,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryColor.withValues(
-                                    alpha: 0.1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.info_outline,
-                                      size: 16,
-                                      color: AppTheme.primaryColor,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'View Details',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppTheme.primaryColor,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-
-                            BookmarkButton(
-                              userId: widget.userId,
-                              movieImdbId: widget.movie.imdbId,
-                              movieTitle: widget.movie.title,
-                              moviePoster: widget.movie.poster,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+          child: TextField(
+            controller: _searchController,
+            onChanged: (v) { setState(() {}); _performSearch(v); },
+            onSubmitted: _performSearch,
+            style: const TextStyle(fontFamily: 'DMSans', fontSize: 14, color: AppTheme.cream),
+            decoration: InputDecoration(
+              hintText: 'Search films & series...',
+              hintStyle: const TextStyle(fontFamily: 'DMSans', fontSize: 13, color: AppTheme.dustGray),
+              prefixIcon: Icon(Icons.search_rounded, color: _searchFocused ? AppTheme.gold : AppTheme.dustGray, size: 18),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(icon: const Icon(Icons.close_rounded, color: AppTheme.dustGray, size: 16), onPressed: () { _searchController.clear(); setState(() {}); _performSearch(''); })
+                  : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 14),
             ),
           ),
         ),
@@ -579,95 +215,173 @@ class _MovieCardState extends State<MovieCard>
   }
 }
 
+// ─────────────────────────────────────────────
+// MOVIE CARD
+// ─────────────────────────────────────────────
+class MovieCard extends StatefulWidget {
+  final Movie movie;
+  final String userId;
+  final VoidCallback onTap;
+
+  const MovieCard({super.key, required this.movie, required this.userId, required this.onTap});
+
+  @override
+  State<MovieCard> createState() => _MovieCardState();
+}
+
+class _MovieCardState extends State<MovieCard> with SingleTickerProviderStateMixin {
+  late AnimationController _tapCtrl;
+  late Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _tapCtrl = AnimationController(duration: const Duration(milliseconds: 130), vsync: this);
+    _scaleAnim = Tween<double>(begin: 1.0, end: 0.98).animate(CurvedAnimation(parent: _tapCtrl, curve: Curves.easeOut));
+  }
+
+  @override
+  void dispose() { _tapCtrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnim,
+      child: GestureDetector(
+        onTapDown: (_) => _tapCtrl.forward(),
+        onTapUp: (_) { _tapCtrl.reverse(); widget.onTap(); },
+        onTapCancel: () => _tapCtrl.reverse(),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          decoration: BoxDecoration(
+            gradient: AppTheme.cardGradient,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            border: Border.all(color: AppTheme.warmGray.withOpacity(0.35), width: 0.5),
+            boxShadow: AppTheme.cardShadow,
+          ),
+          child: Row(
+            children: [
+              // Poster
+              _buildPoster(),
+              // Info
+              Expanded(child: _buildInfo()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPoster() {
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(topLeft: Radius.circular(AppTheme.radiusLg), bottomLeft: Radius.circular(AppTheme.radiusLg)),
+      child: SizedBox(
+        width: 88, height: 124,
+        child: widget.movie.hasPoster
+            ? CachedNetworkImage(
+                imageUrl: widget.movie.poster,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => const lw.LoadingShimmer(height: 124),
+                errorWidget: (_, __, ___) => _posterPlaceholder(),
+              )
+            : _posterPlaceholder(),
+      ),
+    );
+  }
+
+  Widget _posterPlaceholder() {
+    return Container(
+      color: AppTheme.graphite,
+      child: const Center(child: Icon(Icons.movie_outlined, color: AppTheme.warmGray, size: 30)),
+    );
+  }
+
+  Widget _buildInfo() {
+    return Padding(
+      padding: const EdgeInsets.all(13),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              FilmBadge(label: widget.movie.type, color: AppTheme.gold),
+              const SizedBox(width: 6),
+              Text(widget.movie.year, style: const TextStyle(fontFamily: 'DMSans', fontSize: 10, color: AppTheme.dustGray)),
+            ],
+          ),
+          const SizedBox(height: 7),
+          Text(
+            widget.movie.title,
+            style: const TextStyle(fontFamily: 'PlayfairDisplay', fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.cream, height: 1.2),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(widget.movie.imdbId, style: const TextStyle(fontFamily: 'DMSans', fontSize: 10, color: AppTheme.dustGray)),
+          const SizedBox(height: 11),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.gold.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                    border: Border.all(color: AppTheme.gold.withOpacity(0.25), width: 0.5),
+                  ),
+                  child: const Center(
+                    child: Text('DETAILS', style: TextStyle(fontFamily: 'DMSans', fontSize: 9, fontWeight: FontWeight.w800, color: AppTheme.gold, letterSpacing: 1)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              BookmarkButton(userId: widget.userId, movieImdbId: widget.movie.imdbId, movieTitle: widget.movie.title, moviePoster: widget.movie.poster),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// BOOKMARK BUTTON
+// ─────────────────────────────────────────────
 class BookmarkButton extends StatelessWidget {
   final String userId;
   final String movieImdbId;
   final String movieTitle;
   final String moviePoster;
 
-  const BookmarkButton({
-    super.key,
-    required this.userId,
-    required this.movieImdbId,
-    required this.movieTitle,
-    required this.moviePoster,
-  });
+  const BookmarkButton({super.key, required this.userId, required this.movieImdbId, required this.movieTitle, required this.moviePoster});
 
   @override
   Widget build(BuildContext context) {
     return Consumer<BookmarkProvider>(
-      builder: (context, bookmarkProvider, _) {
-        final isBookmarked = bookmarkProvider.isMovieBookmarked(movieImdbId);
-
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          decoration: BoxDecoration(
-            color: isBookmarked
-                ? AppTheme.accentColor.withValues(alpha: 0.15)
-                : Colors.grey.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: GestureDetector(
-            onTap: () async {
-              if (isBookmarked) {
-                final bookmarks = bookmarkProvider.bookmarks
-                    .where((b) => b.movieImdbId == movieImdbId)
-                    .toList();
-                if (bookmarks.isNotEmpty) {
-                  await bookmarkProvider.removeBookmark(
-                    userId: userId,
-                    bookmarkId: bookmarks.first.id,
-                    movieImdbId: movieImdbId,
-                  );
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Removed from bookmarks'),
-                        duration: Duration(seconds: 1),
-                      ),
-                    );
-                  }
-                }
-              } else {
-                await bookmarkProvider.bookmarkMovie(
-                  userId: userId,
-                  movieImdbId: movieImdbId,
-                  movieTitle: movieTitle,
-                  moviePoster: moviePoster,
-                );
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Added to bookmarks'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
-                }
+      builder: (_, bk, __) {
+        final saved = bk.isMovieBookmarked(movieImdbId);
+        return GestureDetector(
+          onTap: () async {
+            if (saved) {
+              final list = bk.bookmarks.where((b) => b.movieImdbId == movieImdbId).toList();
+              if (list.isNotEmpty) {
+                await bk.removeBookmark(userId: userId, bookmarkId: list.first.id, movieImdbId: movieImdbId);
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Removed from collection'), duration: Duration(seconds: 1)));
               }
-            },
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isBookmarked ? Icons.bookmark : Icons.bookmark_outline,
-                  color: isBookmarked
-                      ? AppTheme.accentColor
-                      : Colors.grey.shade600,
-                  size: 18,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  isBookmarked ? 'Bookmarked' : 'Bookmark',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: isBookmarked
-                        ? AppTheme.accentColor
-                        : Colors.grey.shade600,
-                  ),
-                ),
-              ],
+            } else {
+              await bk.bookmarkMovie(userId: userId, movieImdbId: movieImdbId, movieTitle: movieTitle, moviePoster: moviePoster);
+              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Added to collection'), duration: Duration(seconds: 1)));
+            }
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              color: saved ? AppTheme.crimson.withOpacity(0.15) : AppTheme.warmGray.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              border: Border.all(color: saved ? AppTheme.crimson.withOpacity(0.4) : AppTheme.warmGray.withOpacity(0.3), width: 0.5),
             ),
+            child: Icon(saved ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded, color: saved ? AppTheme.crimsonSoft : AppTheme.ashGray, size: 16),
           ),
         );
       },

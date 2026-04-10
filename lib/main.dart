@@ -55,7 +55,7 @@ class MovieTaskApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'Movie Task',
-        theme: AppTheme.lightTheme,
+        theme: AppTheme.theme,
         home: const UserListScreen(),
         debugShowCheckedModeBanner: false,
       ),

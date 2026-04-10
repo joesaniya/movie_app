@@ -75,6 +75,9 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
           poster: bookmarkToUse.moviePoster,
           imdbRating: bookmarkToUse.imdbRating,
         );
+      } else {
+        // If no bookmark, try to load from cache first
+        movieDetailProvider.loadFromCacheIfAvailable(imdbId: widget.imdbId);
       }
 
       // Fetch updated movie details from API
@@ -97,8 +100,8 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
             );
           }
 
-          if (movieDetailProvider.movieDetail == null ||
-              movieDetailProvider.error != null) {
+          // Show error only if no movie detail is available
+          if (movieDetailProvider.movieDetail == null) {
             return loading_widgets.ErrorWidget(
               message:
                   movieDetailProvider.error ?? 'Failed to load movie details',
@@ -108,7 +111,42 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
           }
 
           final movie = movieDetailProvider.movieDetail!;
-          return _buildMovieDetail(context, movie);
+          final isOfflineData = movieDetailProvider.isOfflineData;
+
+          return Column(
+            children: [
+              // Show offline indicator at the top
+              if (isOfflineData)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 16,
+                  ),
+                  color: Colors.orange[700],
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.cloud_off,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          movieDetailProvider.error ?? 'Viewing offline data',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Expanded(child: _buildMovieDetail(context, movie)),
+            ],
+          );
         },
       ),
     );

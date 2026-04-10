@@ -1,13 +1,16 @@
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 import '../models/bookmark_model.dart';
+import '../models/movie_model.dart';
 
 class LocalStorageService {
   static const String _usersBoxName = 'local_users';
   static const String _bookmarksBoxName = 'bookmarks';
+  static const String _movieDetailsBoxName = 'movie_details';
 
   late Box<Map> _usersBox;
   late Box<Map> _bookmarksBox;
+  late Box<Map> _movieDetailsBox;
 
   bool _isInitialized = false;
 
@@ -19,6 +22,7 @@ class LocalStorageService {
     try {
       _usersBox = await Hive.openBox<Map>(_usersBoxName);
       _bookmarksBox = await Hive.openBox<Map>(_bookmarksBoxName);
+      _movieDetailsBox = await Hive.openBox<Map>(_movieDetailsBoxName);
       _isInitialized = true;
     } catch (e) {
       throw Exception('Failed to initialize local storage: $e');
@@ -215,9 +219,58 @@ class LocalStorageService {
     }
   }
 
+  /// Cache movie detail locally
+  Future<void> cacheMovieDetail(MovieDetail movieDetail) async {
+    await _ensureInitialized();
+    final movieData = movieDetail.toJson();
+    movieData['_cachedAt'] = DateTime.now().toIso8601String();
+    await _movieDetailsBox.put(movieDetail.imdbId, movieData);
+  }
+
+  /// Retrieve cached movie detail
+  Future<MovieDetail?> getCachedMovieDetail(String imdbId) async {
+    await _ensureInitialized();
+    final movieData = _movieDetailsBox.get(imdbId);
+    if (movieData == null) return null;
+    try {
+      return MovieDetail.fromJson(movieData.cast<String, dynamic>());
+    } catch (e) {
+      // If deserialization fails, return null
+      return null;
+    }
+  }
+
+  /// Get all cached movie details
+  Future<List<MovieDetail>> getAllCachedMovieDetails() async {
+    await _ensureInitialized();
+    final movieDetails = <MovieDetail>[];
+    for (final entry in _movieDetailsBox.values) {
+      try {
+        movieDetails.add(MovieDetail.fromJson(entry.cast<String, dynamic>()));
+      } catch (e) {
+        // Skip corrupted entries
+        continue;
+      }
+    }
+    return movieDetails;
+  }
+
+  /// Check if a movie detail is cached
+  Future<bool> isMovieDetailCached(String imdbId) async {
+    await _ensureInitialized();
+    return _movieDetailsBox.containsKey(imdbId);
+  }
+
+  /// Clear movie details cache
+  Future<void> clearMovieDetailsCache() async {
+    await _ensureInitialized();
+    await _movieDetailsBox.clear();
+  }
+
   Future<void> clear() async {
     await _ensureInitialized();
     await _usersBox.clear();
     await _bookmarksBox.clear();
+    await _movieDetailsBox.clear();
   }
 }

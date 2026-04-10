@@ -5,6 +5,7 @@ import 'package:logging/logging.dart';
 import '../models/user_model.dart';
 import '../models/movie_model.dart';
 import 'network_interceptor.dart';
+import 'local_storage_service.dart';
 
 final _logger = Logger('ApiService');
 
@@ -16,8 +17,10 @@ class ApiService {
 
   late final Dio _dioUsers;
   late final Dio _dioMovies;
+  final LocalStorageService _localStorageService;
 
-  ApiService() {
+  ApiService({LocalStorageService? localStorageService})
+    : _localStorageService = localStorageService ?? LocalStorageService() {
     _dioUsers = Dio(
       BaseOptions(
         baseUrl: baseUrlUsers,
@@ -153,7 +156,34 @@ class ApiService {
         '',
         queryParameters: {'i': imdbId, 'apikey': movieApiKey, 'type': 'movie'},
       );
-      return MovieDetail.fromJson(response.data);
+      final movieDetail = MovieDetail.fromJson(response.data);
+
+      // Check if the API returned a "not found" response
+      if (movieDetail.response != 'True') {
+        _logger.warning(
+          'API returned "not found" response for: $imdbId, checking cache...',
+        );
+
+        // Try to get from cache first
+        final cachedDetail = await _localStorageService.getCachedMovieDetail(
+          imdbId,
+        );
+        if (cachedDetail != null) {
+          _logger.info('Found cached movie detail for: $imdbId');
+          return cachedDetail;
+        }
+
+        // If no cache available, return mock data as fallback
+        _logger.warning(
+          'No cached data available, using fallback data for: $imdbId',
+        );
+        return _getMockMovieDetail(imdbId);
+      }
+
+      // Only cache successful responses
+      await _localStorageService.cacheMovieDetail(movieDetail);
+
+      return movieDetail;
     } on DioException catch (e) {
       final isNetworkError =
           e.type == DioExceptionType.connectionTimeout ||
@@ -168,7 +198,21 @@ class ApiService {
 
       if (isNetworkError || isApiError || isServerError) {
         _logger.warning(
-          'Network/API error fetching movie detail (${e.type}), using fallback data: $imdbId',
+          'Network/API error fetching movie detail (${e.type}), checking cache for: $imdbId',
+        );
+
+        // Try to get from cache first
+        final cachedDetail = await _localStorageService.getCachedMovieDetail(
+          imdbId,
+        );
+        if (cachedDetail != null) {
+          _logger.info('Found cached movie detail for: $imdbId');
+          return cachedDetail;
+        }
+
+        // If no cache available, return mock data as fallback
+        _logger.warning(
+          'No cached data available, using fallback data for: $imdbId',
         );
         return _getMockMovieDetail(imdbId);
       }

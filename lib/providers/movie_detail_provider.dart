@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import '../models/movie_model.dart';
 import '../services/api_service.dart';
-import '../services/connectivity_service.dart';
+import '../services/local_storage_service.dart';
 import '../services/service_locator.dart';
 
 final _logger = Logger('MovieDetailProvider');
 
 class MovieDetailProvider extends ChangeNotifier {
   final ApiService _apiService = getIt<ApiService>();
-  final ConnectivityService _connectivityService = getIt<ConnectivityService>();
+  final LocalStorageService _localStorageService = getIt<LocalStorageService>();
 
   MovieDetail? _movieDetail;
   bool _isLoading = false;
@@ -29,12 +29,50 @@ class MovieDetailProvider extends ChangeNotifier {
 
     try {
       _movieDetail = await _apiService.getMovieDetail(imdbId: imdbId);
-      _error = null;
-      _isOfflineData = false;
+
+      // Check if API returned "movie not found"
+      if (_movieDetail?.response != 'True') {
+        // API couldn't find the movie - try cache
+        _logger.warning('Movie not found in API: $imdbId, checking cache...');
+        final cachedDetail = await _localStorageService.getCachedMovieDetail(
+          imdbId,
+        );
+        if (cachedDetail != null) {
+          _movieDetail = cachedDetail;
+          _error = 'Viewing cached data (offline mode)';
+          _isOfflineData = true;
+        } else {
+          _error = 'Movie details not found';
+          _movieDetail = null;
+          _isOfflineData = false;
+        }
+      } else {
+        _error = null;
+        _isOfflineData = false;
+      }
     } catch (e) {
-      _error = 'Failed to load movie details: $e';
-      _movieDetail = null;
-      _isOfflineData = false;
+      _logger.warning('Failed to load movie from API: $e, trying cache...');
+
+      // Try to load from cache when offline or API error
+      try {
+        final cachedDetail = await _localStorageService.getCachedMovieDetail(
+          imdbId,
+        );
+        if (cachedDetail != null) {
+          _movieDetail = cachedDetail;
+          _error = 'Viewing cached data (offline mode)';
+          _isOfflineData = true;
+        } else {
+          _error = 'Failed to load movie details: $e';
+          _movieDetail = null;
+          _isOfflineData = false;
+        }
+      } catch (cacheError) {
+        _logger.severe('Error loading from cache: $cacheError');
+        _error = 'Failed to load movie details: $e';
+        _movieDetail = null;
+        _isOfflineData = false;
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -75,6 +113,27 @@ class MovieDetailProvider extends ChangeNotifier {
     _isLoading = false;
     _error = null;
     notifyListeners();
+  }
+
+  /// Load movie detail from cache if available (without requiring API call)
+  /// This is called when there's no bookmark but cache might exist
+  Future<void> loadFromCacheIfAvailable({required String imdbId}) async {
+    try {
+      final cachedDetail = await _localStorageService.getCachedMovieDetail(
+        imdbId,
+      );
+      if (cachedDetail != null) {
+        _movieDetail = cachedDetail;
+        _isOfflineData = true;
+        _isLoading = false;
+        _error = null;
+        _logger.info('Loaded movie detail from cache: $imdbId');
+        notifyListeners();
+      }
+    } catch (e) {
+      _logger.warning('Could not load from cache: $e');
+      // Continue anyways, will attempt API fetch
+    }
   }
 
   void reset() {

@@ -10,6 +10,7 @@ import 'providers/bookmark_provider.dart';
 import 'providers/connectivity_provider.dart';
 import 'screens/user_list_screen.dart';
 import 'services/service_locator.dart';
+import 'services/background_sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +20,9 @@ void main() async {
   _setupLogging();
 
   await setupServiceLocator();
+
+  // Register periodic background sync
+  await BackgroundSyncService.registerPeriodicSync();
 
   runApp(const MovieTaskApp());
 }

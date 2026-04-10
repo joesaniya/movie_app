@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import '../services/connectivity_service.dart';
 import '../services/sync_service.dart';
+import '../services/background_sync_service.dart';
 import '../services/service_locator.dart';
 
 final _logger = Logger('ConnectivityProvider');
@@ -40,6 +41,11 @@ class ConnectivityProvider extends ChangeNotifier {
         .catchError((e) {
           _logger.severe('Foreground sync failed: $e');
         });
+
+    // Also schedule a background sync task for redundancy
+    BackgroundSyncService.scheduleImmediateSync().catchError((e) {
+      _logger.warning('Failed to schedule background sync: $e');
+    });
   }
 
   @override

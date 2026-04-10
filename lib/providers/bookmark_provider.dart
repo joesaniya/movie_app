@@ -12,11 +12,10 @@ class BookmarkProvider extends ChangeNotifier {
   final ConnectivityService _connectivityService = getIt<ConnectivityService>();
 
   List<Bookmark> _bookmarks = [];
-  Map<String, Set<String>> _userBookmarkedMovies = {};
+  Set<String> _globalBookmarkedMovies = {};
   bool _isLoading = false;
   String? _error;
   bool _wasOffline = false;
-  String? _currentUserId;
 
   BookmarkProvider() {
     _wasOffline = !_connectivityService.isOnline;
@@ -28,18 +27,14 @@ class BookmarkProvider extends ChangeNotifier {
   String? get error => _error;
 
   Future<void> loadUserBookmarks(String userId) async {
-    _currentUserId = userId;
     _isLoading = true;
     notifyListeners();
 
     try {
-      final bookmarks = await _localStorageService.getUserBookmarks(userId);
+      final bookmarks = await _localStorageService.getAllBookmarks();
       _bookmarks = bookmarks;
 
-      if (!_userBookmarkedMovies.containsKey(userId)) {
-        _userBookmarkedMovies[userId] = {};
-      }
-      _userBookmarkedMovies[userId] = {
+      _globalBookmarkedMovies = {
         for (final bookmark in bookmarks) bookmark.movieImdbId,
       };
 
@@ -85,11 +80,7 @@ class BookmarkProvider extends ChangeNotifier {
       );
 
       _bookmarks.add(bookmark);
-
-      if (!_userBookmarkedMovies.containsKey(userId)) {
-        _userBookmarkedMovies[userId] = {};
-      }
-      _userBookmarkedMovies[userId]!.add(movieImdbId);
+      _globalBookmarkedMovies.add(movieImdbId);
 
       _error = null;
       notifyListeners();
@@ -108,7 +99,7 @@ class BookmarkProvider extends ChangeNotifier {
       await _localStorageService.removeBookmark(bookmarkId);
 
       _bookmarks.removeWhere((b) => b.id == bookmarkId);
-      _userBookmarkedMovies[userId]?.remove(movieImdbId);
+      _globalBookmarkedMovies.remove(movieImdbId);
 
       _error = null;
       notifyListeners();
@@ -118,8 +109,8 @@ class BookmarkProvider extends ChangeNotifier {
     }
   }
 
-  bool isMovieBookmarked(String userId, String movieImdbId) {
-    return _userBookmarkedMovies[userId]?.contains(movieImdbId) ?? false;
+  bool isMovieBookmarked(String movieImdbId) {
+    return _globalBookmarkedMovies.contains(movieImdbId);
   }
 
   Future<void> loadAllBookmarks() async {
@@ -127,13 +118,9 @@ class BookmarkProvider extends ChangeNotifier {
       final bookmarks = await _localStorageService.getAllBookmarks();
       _bookmarks = bookmarks;
 
-      _userBookmarkedMovies.clear();
-      for (final bookmark in bookmarks) {
-        if (!_userBookmarkedMovies.containsKey(bookmark.userId)) {
-          _userBookmarkedMovies[bookmark.userId] = {};
-        }
-        _userBookmarkedMovies[bookmark.userId]!.add(bookmark.movieImdbId);
-      }
+      _globalBookmarkedMovies = {
+        for (final bookmark in bookmarks) bookmark.movieImdbId,
+      };
 
       notifyListeners();
     } catch (e) {
@@ -144,7 +131,7 @@ class BookmarkProvider extends ChangeNotifier {
 
   void reset() {
     _bookmarks.clear();
-    _userBookmarkedMovies.clear();
+    _globalBookmarkedMovies.clear();
     _isLoading = false;
     _error = null;
     notifyListeners();
@@ -153,20 +140,11 @@ class BookmarkProvider extends ChangeNotifier {
   void _onConnectivityChanged() {
     final isNowOnline = _connectivityService.isOnline;
 
-    
     if (_wasOffline && isNowOnline) {
-      _logger.info(
-        'Device came online, scheduling bookmarks reload after sync completes',
-      );
-     
+      _logger.info('Device came online, reloading all bookmarks');
       Future.delayed(const Duration(seconds: 1), () {
-        if (_currentUserId != null) {
-          _logger.info('Reloading bookmarks for user: $_currentUserId');
-          loadUserBookmarks(_currentUserId!);
-        } else {
-          _logger.info('Reloading all bookmarks');
-          loadAllBookmarks();
-        }
+        _logger.info('Reloading all bookmarks after sync');
+        loadAllBookmarks();
       });
     }
 

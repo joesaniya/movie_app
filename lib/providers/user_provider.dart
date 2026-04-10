@@ -34,19 +34,15 @@ class PaginatedUsersProvider extends ChangeNotifier {
     final apiUsers = _users;
     final apiUserIds = apiUsers.map((u) => u.id).toSet();
 
-  
     final localUsersList = _localUsers
         .where((lu) {
-        
           if (!lu.isSynced) return true;
 
-          
           if (lu.apiId != null) {
             final localUserId = int.tryParse(lu.apiId!);
             return !apiUserIds.contains(localUserId);
           }
 
-         
           return true;
         })
         .map((lu) {
@@ -65,7 +61,7 @@ class PaginatedUsersProvider extends ChangeNotifier {
         })
         .toList();
 
-  return [...localUsersList, ...apiUsers];
+    return [...localUsersList, ...apiUsers];
   }
 
   List<User> get users => _users;
@@ -101,6 +97,8 @@ class PaginatedUsersProvider extends ChangeNotifier {
 
       if (response.data.isNotEmpty) {
         _users.addAll(response.data);
+       
+        await _localStorageService.cacheApiUsers(_users);
       }
 
       final nextPage = response.page + 1;
@@ -133,6 +131,24 @@ class PaginatedUsersProvider extends ChangeNotifier {
         _error = 'Failed to load local users: $e';
         notifyListeners();
       }
+    }
+  }
+
+  
+  Future<void> loadCachedApiUsers() async {
+    try {
+      final cachedUsers = await _localStorageService.getCachedApiUsers();
+      if (cachedUsers.isNotEmpty) {
+        _users.clear();
+        _users.addAll(cachedUsers);
+        _error = 'Viewing cached data (offline mode)';
+        log('Loaded ${_users.length} cached API users');
+        notifyListeners();
+      } else {
+        log('No cached API users available');
+      }
+    } catch (e) {
+      log('Warning: Failed to load cached API users: $e');
     }
   }
 
@@ -291,14 +307,12 @@ class PaginatedUsersProvider extends ChangeNotifier {
   void _onConnectivityChanged() {
     final isNowOnline = _connectivityService.isOnline;
 
-
     if (_wasOffline && isNowOnline) {
-      _logger.info(
-        'Device came online, reloading local users to reflect synced status',
-      );
-      
+      _logger.info('Device came online, fetching fresh user data');
+
       Future.delayed(const Duration(seconds: 1), () {
-        _logger.info('Reloading local users');
+        _logger.info('Refreshing users from API');
+        fetchUsers(refresh: true);
         loadLocalUsers();
       });
     }

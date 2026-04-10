@@ -6,14 +6,7 @@ import '../widgets/loading_widgets.dart' as loading_widgets;
 import 'movie_detail_screen.dart';
 
 class BookmarksScreen extends StatefulWidget {
-  final String userId;
-  final String userName;
-
-  const BookmarksScreen({
-    super.key,
-    required this.userId,
-    required this.userName,
-  });
+  const BookmarksScreen({super.key});
 
   @override
   State<BookmarksScreen> createState() => _BookmarksScreenState();
@@ -30,7 +23,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final bookmarkProvider = context.read<BookmarkProvider>();
-      bookmarkProvider.loadUserBookmarks(widget.userId);
+      bookmarkProvider.loadAllBookmarks();
     });
   }
 
@@ -54,9 +47,9 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          '${widget.userName}\'s Bookmarks',
-          style: const TextStyle(fontWeight: FontWeight.w600),
+        title: const Text(
+          'My Bookmarks',
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
         elevation: 0,
         actions: [
@@ -93,9 +86,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                 message:
                     'Start bookmarking movies to see them here!\nVisit the movie list to add your favorites.',
                 onRetry: () {
-                  context.read<BookmarkProvider>().loadUserBookmarks(
-                    widget.userId,
-                  );
+                  context.read<BookmarkProvider>().loadAllBookmarks();
                 },
               ),
             );
@@ -103,7 +94,6 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
 
           return Column(
             children: [
-             
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: TextField(
@@ -133,7 +123,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                   },
                 ),
               ),
-             
+
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Row(
@@ -148,7 +138,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-            
+
               Expanded(
                 child: filteredBookmarks.isEmpty
                     ? Center(
@@ -206,7 +196,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
             builder: (context) => MovieDetailScreen(
               imdbId: bookmark.movieImdbId,
               bookmark: bookmark,
-              userId: widget.userId,
+              userId: '',
             ),
           ),
         );
@@ -217,7 +207,6 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-           
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
@@ -239,7 +228,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                     : const Center(child: Icon(Icons.movie, size: 48)),
               ),
             ),
-            
+
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: Column(
@@ -346,7 +335,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                   builder: (context) => MovieDetailScreen(
                     imdbId: bookmark.movieImdbId,
                     bookmark: bookmark,
-                    userId: widget.userId,
+                    userId: '',
                   ),
                 ),
               );
@@ -382,7 +371,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
               builder: (context) => MovieDetailScreen(
                 imdbId: bookmark.movieImdbId,
                 bookmark: bookmark,
-                userId: widget.userId,
+                userId: '',
               ),
             ),
           );
@@ -407,7 +396,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
           TextButton(
             onPressed: () {
               context.read<BookmarkProvider>().removeBookmark(
-                userId: widget.userId,
+                userId: bookmark.userId,
                 bookmarkId: bookmark.id,
                 movieImdbId: bookmark.movieImdbId,
               );

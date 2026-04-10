@@ -79,7 +79,6 @@ class _MovieListScreenState extends State<MovieListScreen> {
   }
 
   void _performSearch(String? query) {
-    
     final finalQuery = (query ?? _searchController.text).trim();
     log('Performing search with query: $finalQuery');
 
@@ -136,10 +135,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => BookmarksScreen(
-                            userId: widget.userId,
-                            userName: widget.userName,
-                          ),
+                          builder: (context) => const BookmarksScreen(),
                         ),
                       );
                     },
@@ -183,11 +179,10 @@ class _MovieListScreenState extends State<MovieListScreen> {
                 controller: _searchController,
                 onChanged: (value) {
                   setState(() {});
-                 
+
                   _performSearch(value);
                 },
                 onSubmitted: (value) {
-                 
                   _performSearch(value);
                 },
                 decoration: InputDecoration(
@@ -353,10 +348,8 @@ class _MovieCardState extends State<MovieCard>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                
                   Stack(
                     children: [
-                     
                       Container(
                         width: double.infinity,
                         height: 220,
@@ -385,7 +378,7 @@ class _MovieCardState extends State<MovieCard>
                                 ),
                               ),
                       ),
-                      
+
                       Container(
                         width: double.infinity,
                         height: 220,
@@ -400,7 +393,7 @@ class _MovieCardState extends State<MovieCard>
                           ),
                         ),
                       ),
-                      
+
                       Positioned(
                         top: 12,
                         right: 12,
@@ -434,13 +427,11 @@ class _MovieCardState extends State<MovieCard>
                     ],
                   ),
 
-                 
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                      
                         Text(
                           widget.movie.title,
                           style: Theme.of(context).textTheme.titleLarge
@@ -454,10 +445,8 @@ class _MovieCardState extends State<MovieCard>
 
                         const SizedBox(height: 12),
 
-                        
                         Row(
                           children: [
-                           
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 10,
@@ -490,7 +479,7 @@ class _MovieCardState extends State<MovieCard>
                               ),
                             ),
                             const SizedBox(width: 8),
-                          
+
                             Expanded(
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
@@ -530,11 +519,9 @@ class _MovieCardState extends State<MovieCard>
 
                         const SizedBox(height: 12),
 
-                       
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            
                             Expanded(
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
@@ -570,7 +557,7 @@ class _MovieCardState extends State<MovieCard>
                               ),
                             ),
                             const SizedBox(width: 12),
-                           
+
                             BookmarkButton(
                               userId: widget.userId,
                               movieImdbId: widget.movie.imdbId,
@@ -610,10 +597,7 @@ class BookmarkButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<BookmarkProvider>(
       builder: (context, bookmarkProvider, _) {
-        final isBookmarked = bookmarkProvider.isMovieBookmarked(
-          userId,
-          movieImdbId,
-        );
+        final isBookmarked = bookmarkProvider.isMovieBookmarked(movieImdbId);
 
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -627,9 +611,7 @@ class BookmarkButton extends StatelessWidget {
             onTap: () async {
               if (isBookmarked) {
                 final bookmarks = bookmarkProvider.bookmarks
-                    .where(
-                      (b) => b.userId == userId && b.movieImdbId == movieImdbId,
-                    )
+                    .where((b) => b.movieImdbId == movieImdbId)
                     .toList();
                 if (bookmarks.isNotEmpty) {
                   await bookmarkProvider.removeBookmark(

@@ -26,14 +26,26 @@ class _UserListScreenState extends State<UserListScreen> {
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
 
-   
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final usersProvider = Provider.of<PaginatedUsersProvider>(
         context,
         listen: false,
       );
-      usersProvider.fetchUsers();
+      final connectivityProvider = Provider.of<ConnectivityProvider>(
+        context,
+        listen: false,
+      );
+
+    
       usersProvider.loadLocalUsers();
+
+      
+      if (!connectivityProvider.isOnline) {
+        usersProvider.loadCachedApiUsers();
+      } else {
+    
+        usersProvider.fetchUsers();
+      }
     });
   }
 
@@ -49,7 +61,6 @@ class _UserListScreenState extends State<UserListScreen> {
       listen: false,
     );
 
-    
     final scrollPosition = _scrollController.position;
     final isNearBottom =
         scrollPosition.pixels >= (scrollPosition.maxScrollExtent * 0.8) - 500;
@@ -193,7 +204,6 @@ class _UserListScreenState extends State<UserListScreen> {
             context,
             MaterialPageRoute(builder: (context) => const AddUserScreen()),
           ).then((_) {
-          
             if (mounted) {
               usersProvider.loadLocalUsers();
             }

@@ -40,25 +40,23 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
         listen: false,
       );
 
-    Bookmark? bookmarkToUse = widget.bookmark;
+      Bookmark? bookmarkToUse = widget.bookmark;
 
-      
       if (bookmarkToUse == null) {
         final userBookmarks = bookmarkProvider.bookmarks
             .where((b) => b.userId == widget.userId)
             .toList();
-        
+
         try {
           bookmarkToUse = userBookmarks.firstWhere(
             (b) => b.movieImdbId == widget.imdbId,
           );
         } catch (e) {
-         
           bookmarkToUse = null;
         }
       }
 
-  if (bookmarkToUse != null && bookmarkToUse.movieYear != null) {
+      if (bookmarkToUse != null && bookmarkToUse.movieYear != null) {
         movieDetailProvider.loadMovieDetailFromBookmark(
           title: bookmarkToUse.movieTitle,
           year: bookmarkToUse.movieYear ?? '',
@@ -74,14 +72,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
           imdbRating: bookmarkToUse.imdbRating,
         );
       } else {
-       
         movieDetailProvider.loadFromCacheIfAvailable(imdbId: widget.imdbId);
       }
 
-
       movieDetailProvider.fetchMovieDetail(imdbId: widget.imdbId);
 
-     
       bookmarkProvider.loadUserBookmarks(widget.userId);
     });
   }
@@ -98,7 +93,6 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
             );
           }
 
-          
           if (movieDetailProvider.movieDetail == null) {
             return loading_widgets.ErrorWidget(
               message:
@@ -113,7 +107,6 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
 
           return Column(
             children: [
-            
               if (isOfflineData)
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -465,10 +458,7 @@ class BookmarkFloatingButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<BookmarkProvider>(
       builder: (context, bookmarkProvider, _) {
-        final isBookmarked = bookmarkProvider.isMovieBookmarked(
-          userId,
-          movieImdbId,
-        );
+        final isBookmarked = bookmarkProvider.isMovieBookmarked(movieImdbId);
 
         return Container(
           decoration: BoxDecoration(
@@ -491,9 +481,7 @@ class BookmarkFloatingButton extends StatelessWidget {
             onPressed: () async {
               if (isBookmarked) {
                 final bookmarks = bookmarkProvider.bookmarks
-                    .where(
-                      (b) => b.userId == userId && b.movieImdbId == movieImdbId,
-                    )
+                    .where((b) => b.movieImdbId == movieImdbId)
                     .toList();
                 if (bookmarks.isNotEmpty) {
                   await bookmarkProvider.removeBookmark(

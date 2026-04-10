@@ -46,6 +46,10 @@ class PaginatedMoviesProvider extends ChangeNotifier {
         _currentPage++;
         _hasMore = _movies.length < _totalResults;
         _error = null;
+
+        _apiService.preCacheMovieDetails(response.movies!).catchError((e) {
+          log('Warning: Failed to pre-cache movie details: $e');
+        });
       } else {
         _error = response.error ?? 'Failed to fetch movies';
       }
@@ -87,6 +91,10 @@ class PaginatedMoviesProvider extends ChangeNotifier {
         _currentPage++;
         _hasMore = _movies.length < _totalResults;
         _error = null;
+
+        _apiService.preCacheMovieDetails(response.movies!).catchError((e) {
+          log('Warning: Failed to pre-cache movie details: $e');
+        });
       } else {
         _error = response.error ?? 'No movies found';
       }

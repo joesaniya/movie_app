@@ -22,7 +22,6 @@ class PaginatedUsersProvider extends ChangeNotifier {
   List<User> get allUsers {
     final apiUsers = _users;
 
-
     final unsyncedLocalUsersList = _localUsers.where((lu) => !lu.isSynced).map((
       lu,
     ) {
@@ -49,13 +48,16 @@ class PaginatedUsersProvider extends ChangeNotifier {
   bool get hasMore => _hasMore;
 
   Future<void> fetchUsers({bool refresh = false}) async {
-   
-    if (!refresh && _isLoading) return;
+    
+    if (_isLoading) {
+      return;
+    }
 
     if (refresh) {
       _currentPage = 1;
       _users.clear();
       _error = null;
+      _hasMore = true;
     }
 
     _isLoading = true;
@@ -63,22 +65,31 @@ class PaginatedUsersProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      log('Fetching users - Page: $_currentPage');
       final response = await _apiService.fetchUsers(page: _currentPage);
-      log('Fetched page $_currentPage: ${response.data.length} users');
+
+      log('Fetched page ${response.page}: ${response.data.length} users');
       log('Total pages: ${response.totalPages}');
 
-      _users.addAll(response.data);
-      _currentPage = response.page + 1;
+      
+      if (response.data.isNotEmpty) {
+        _users.addAll(response.data);
+      }
+
+      
+      final nextPage = response.page + 1;
+      _currentPage = nextPage;
       _totalPages = response.totalPages;
       _hasMore = response.page < response.totalPages;
       _error = null;
 
       log(
-        'Now on page $_currentPage, hasMore: $_hasMore, totalUsers: ${_users.length}',
+        'Current page: $_currentPage, hasMore: $_hasMore, totalUsers: ${_users.length}',
       );
     } catch (e) {
       _error = 'Failed to load users: $e';
-      print('Error fetching users: $e');
+      log('Error fetching users: $e');
+
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -88,10 +99,15 @@ class PaginatedUsersProvider extends ChangeNotifier {
   Future<void> loadLocalUsers() async {
     try {
       _localUsers = await _localStorageService.getAllUsers();
+    log('Loaded ${_localUsers.length} local users');
       notifyListeners();
     } catch (e) {
-      _error = 'Failed to load local users: $e';
-      notifyListeners();
+      log('Warning: Failed to load local users: $e');
+
+      if (_error == null) {
+        _error = 'Failed to load local users: $e';
+        notifyListeners();
+      }
     }
   }
 
@@ -116,6 +132,60 @@ class PaginatedUsersProvider extends ChangeNotifier {
     }
   }
 
+
+  Future<void> createUserOnlineSimple({
+    required String name,
+    required String job,
+  }) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      
+      final response = await _apiService.createUserSimple(name: name, job: job);
+
+      log('User created on server with response: $response');
+
+      final apiId = response['id']?.toString() ?? '';
+
+     
+      final nameParts = name.split(' ');
+      final firstName = nameParts.isNotEmpty ? nameParts.first : '';
+      final lastName = nameParts.length > 1 ? nameParts.skip(1).join(' ') : '';
+
+  final newUser = User(
+        id: int.tryParse(apiId),
+        email: job,
+        firstName: firstName,
+        lastName: lastName,
+        avatar: _generateAvatarUrl(firstName, lastName),
+      );
+
+   _users.insert(0, newUser);
+
+      
+      await _localStorageService.createSyncedUser(
+        name: name,
+        job: job,
+        apiId: apiId,
+      );
+
+      _error = null;
+      await loadLocalUsers();
+      notifyListeners();
+    } catch (e) {
+      _error = 'Failed to create user: $e';
+      log('Error creating user online: $e');
+      notifyListeners();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+ 
   Future<User?> createUserOnline({
     required String firstName,
     required String lastName,
@@ -136,7 +206,6 @@ class PaginatedUsersProvider extends ChangeNotifier {
             : _generateAvatarUrl(firstName, lastName),
       );
 
-      
       final newUser = User(
         id: int.tryParse(response.id ?? ''),
         email: email,
@@ -151,7 +220,6 @@ class PaginatedUsersProvider extends ChangeNotifier {
       _users.insert(0, newUser);
       _error = null;
 
-     
       final apiId = response.id ?? '';
       await _localStorageService.createSyncedUser(
         name: '$firstName $lastName',
@@ -159,7 +227,6 @@ class PaginatedUsersProvider extends ChangeNotifier {
         apiId: apiId,
       );
 
-     
       await loadLocalUsers();
       notifyListeners();
 
@@ -185,18 +252,19 @@ class PaginatedUsersProvider extends ChangeNotifier {
   }
 
   String _generateAvatarUrl(String firstName, String lastName) {
-   
     final seed = '$firstName $lastName'.toLowerCase().replaceAll(' ', '_');
     return 'https://api.dicebear.com/7.x/avataaars/svg?seed=$seed';
   }
 
   void reset() {
     _users.clear();
+    _localUsers.clear();
     _currentPage = 1;
     _totalPages = 1;
     _isLoading = false;
     _error = null;
     _hasMore = true;
+    log('Provider reset to initial state');
     notifyListeners();
   }
 }

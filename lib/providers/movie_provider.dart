@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/movie_model.dart';
 import '../services/api_service.dart';
 import '../services/service_locator.dart';
+import 'dart:developer';
 
 class PaginatedMoviesProvider extends ChangeNotifier {
   final ApiService _apiService = getIt<ApiService>();
@@ -60,6 +61,7 @@ class PaginatedMoviesProvider extends ChangeNotifier {
     required String query,
     bool refresh = false,
   }) async {
+    log('Searching movies with query: $query, refresh: $refresh');
     if (!refresh && _isLoading) return;
 
     if (refresh || _searchQuery != query) {

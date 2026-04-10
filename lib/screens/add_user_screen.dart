@@ -13,10 +13,8 @@ class AddUserScreen extends StatefulWidget {
 }
 
 class _AddUserScreenState extends State<AddUserScreen> {
-  TextEditingController _firstNameController = TextEditingController();
-  TextEditingController _lastNameController = TextEditingController();
-  TextEditingController _emailController = TextEditingController();
-  TextEditingController _avatarController = TextEditingController();
+  late TextEditingController _nameController;
+  late TextEditingController _jobController;
   bool _isLoading = false;
   String? _successMessage;
   String? _errorMessage;
@@ -24,28 +22,38 @@ class _AddUserScreenState extends State<AddUserScreen> {
   @override
   void initState() {
     super.initState();
-   
-    _firstNameController = TextEditingController();
-    _lastNameController = TextEditingController();
-    _emailController = TextEditingController();
-    _avatarController = TextEditingController();
+    _nameController = TextEditingController();
+    _jobController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _emailController.dispose();
-    _avatarController.dispose();
+    _nameController.dispose();
+    _jobController.dispose();
     super.dispose();
   }
 
   Future<void> _submitForm() async {
-    if (_firstNameController.text.isEmpty ||
-        _lastNameController.text.isEmpty ||
-        _emailController.text.isEmpty) {
+    final name = _nameController.text.trim();
+    final job = _jobController.text.trim();
+
+    if (name.isEmpty || job.isEmpty) {
       setState(() {
-        _errorMessage = 'Please fill in first name, last name, and email';
+        _errorMessage = 'Please fill in both name and job fields';
+      });
+      return;
+    }
+
+    if (name.length < 2) {
+      setState(() {
+        _errorMessage = 'Name must be at least 2 characters';
+      });
+      return;
+    }
+
+    if (job.length < 2) {
+      setState(() {
+        _errorMessage = 'Job must be at least 2 characters';
       });
       return;
     }
@@ -67,38 +75,24 @@ class _AddUserScreenState extends State<AddUserScreen> {
       );
 
       if (connectivity.isOnline) {
-
-        await usersProvider.createUserOnline(
-          firstName: _firstNameController.text.trim(),
-          lastName: _lastNameController.text.trim(),
-          email: _emailController.text.trim(),
-          avatar: _avatarController.text.trim(),
-        );
+        // Online: Create user immediately via Reqres API
+        await usersProvider.createUserOnlineSimple(name: name, job: job);
         setState(() {
-          _successMessage = 'User created successfully!';
+          _successMessage = 'User created successfully on server!';
           _isLoading = false;
-          _firstNameController.clear();
-          _lastNameController.clear();
-          _emailController.clear();
-          _avatarController.clear();
+          _nameController.clear();
+          _jobController.clear();
         });
       } else {
-
-        await usersProvider.createLocalUser(
-          name:
-              '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}',
-          job: _emailController.text.trim(),
-        );
+        
+        await usersProvider.createLocalUser(name: name, job: job);
         setState(() {
           _successMessage = 'User created offline. Will sync when online.';
           _isLoading = false;
-          _firstNameController.clear();
-          _lastNameController.clear();
-          _emailController.clear();
-          _avatarController.clear();
+          _nameController.clear();
+          _jobController.clear();
         });
       }
-
 
       await Future.delayed(const Duration(seconds: 2));
       if (mounted) {
@@ -122,7 +116,6 @@ class _AddUserScreenState extends State<AddUserScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               Text(
                 'Add a New User',
                 style: Theme.of(context).textTheme.displaySmall,
@@ -136,7 +129,6 @@ class _AddUserScreenState extends State<AddUserScreen> {
               ),
               const SizedBox(height: 32),
 
-             
               Consumer<ConnectivityProvider>(
                 builder: (context, connectivity, _) {
                   if (!connectivity.isOnline) {
@@ -173,12 +165,11 @@ class _AddUserScreenState extends State<AddUserScreen> {
               ),
               const SizedBox(height: 24),
 
-             
               TextField(
-                controller: _firstNameController,
+                controller: _nameController,
                 decoration: InputDecoration(
-                  labelText: 'First Name',
-                  hintText: 'Enter your first name',
+                  labelText: 'Name',
+                  hintText: 'Enter user name (e.g., morpheus)',
                   prefixIcon: const Icon(Icons.person),
                   enabled: !_isLoading,
                 ),
@@ -187,36 +178,11 @@ class _AddUserScreenState extends State<AddUserScreen> {
               const SizedBox(height: 16),
 
               TextField(
-                controller: _lastNameController,
+                controller: _jobController,
                 decoration: InputDecoration(
-                  labelText: 'Last Name',
-                  hintText: 'Enter your last name',
-                  prefixIcon: const Icon(Icons.person),
-                  enabled: !_isLoading,
-                ),
-                textInputAction: TextInputAction.next,
-              ),
-              const SizedBox(height: 16),
-
-              TextField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  hintText: 'Enter your email',
-                  prefixIcon: const Icon(Icons.email),
-                  enabled: !_isLoading,
-                ),
-                textInputAction: TextInputAction.next,
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 16),
-
-              TextField(
-                controller: _avatarController,
-                decoration: InputDecoration(
-                  labelText: 'Avatar URL (Optional)',
-                  hintText: 'Enter avatar image URL',
-                  prefixIcon: const Icon(Icons.image),
+                  labelText: 'Job',
+                  hintText: 'Enter job title (e.g., leader)',
+                  prefixIcon: const Icon(Icons.work),
                   enabled: !_isLoading,
                 ),
                 textInputAction: TextInputAction.done,
@@ -224,7 +190,6 @@ class _AddUserScreenState extends State<AddUserScreen> {
               ),
               const SizedBox(height: 24),
 
-            
               if (_errorMessage != null)
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -253,7 +218,6 @@ class _AddUserScreenState extends State<AddUserScreen> {
                   ),
                 ),
 
-             
               if (_successMessage != null)
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -285,7 +249,6 @@ class _AddUserScreenState extends State<AddUserScreen> {
               if (_errorMessage != null || _successMessage != null)
                 const SizedBox(height: 24),
 
-             
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -313,7 +276,6 @@ class _AddUserScreenState extends State<AddUserScreen> {
               ),
               const SizedBox(height: 16),
 
-             
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -324,7 +286,6 @@ class _AddUserScreenState extends State<AddUserScreen> {
               ),
 
               const SizedBox(height: 24),
-
 
               Container(
                 padding: const EdgeInsets.all(16),

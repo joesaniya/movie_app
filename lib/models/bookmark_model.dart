@@ -7,7 +7,7 @@ class Bookmark {
   final DateTime createdAt;
   final bool isSynced;
 
-  // Additional movie details for offline viewing
+
   final String? movieYear;
   final String? moviePlot;
   final String? movieDirector;

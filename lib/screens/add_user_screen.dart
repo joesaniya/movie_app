@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 import '../providers/connectivity_provider.dart';
 import '../config/app_theme.dart';
-import '../widgets/loading_widgets.dart';
+
 
 class AddUserScreen extends StatefulWidget {
   const AddUserScreen({super.key});
@@ -75,7 +75,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
       );
 
       if (connectivity.isOnline) {
-        // Online: Create user immediately via Reqres API
+       
         await usersProvider.createUserOnlineSimple(name: name, job: job);
         setState(() {
           _successMessage = 'User created successfully on server!';

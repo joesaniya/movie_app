@@ -37,13 +37,13 @@ class SyncService {
       try {
         _logger.info('Syncing user: ${user.name} (job: ${user.job})');
 
-        // POST to Reqres API: {\"name\": \"name\", \"job\": \"job\"}
+       
         final response = await apiService.createUserSimple(
           name: user.name,
           job: user.job,
         );
 
-        // Extract API ID from response
+       
         final apiId = response['id']?.toString() ?? '';
 
         if (apiId.isEmpty) {
@@ -51,7 +51,7 @@ class SyncService {
           continue;
         }
 
-        // Update local database with API ID and mark as synced
+       
         await localStorageService.updateUserSyncStatus(
           userId: user.id,
           apiId: apiId,
@@ -62,7 +62,7 @@ class SyncService {
         );
       } catch (e) {
         _logger.warning('Failed to sync user ${user.name}: $e');
-        // Don't rethrow - continue syncing other users
+        
       }
     }
   }
@@ -74,7 +74,7 @@ class SyncService {
       try {
         _logger.info('Syncing bookmark: ${bookmark.movieTitle}');
 
-        // Get the user associated with this bookmark to verify sync status
+       
         final user = await localStorageService.getUserById(bookmark.userId);
 
         if (user == null) {
@@ -82,8 +82,7 @@ class SyncService {
           continue;
         }
 
-        // Only sync bookmark if the user was successfully synced
-        // This ensures the user-bookmark relationship is preserved
+    
         if (!user.isSynced) {
           _logger.warning(
             'User ${user.name} not synced yet, skipping bookmark sync',
@@ -91,22 +90,13 @@ class SyncService {
           continue;
         }
 
-        // TODO: Implement actual API call to sync bookmark
-        // Example:
-        // await apiService.createBookmark(
-        //   userId: user.apiId!,
-        //   movieImdbId: bookmark.movieImdbId,
-        //   movieTitle: bookmark.movieTitle,
-        //   moviePoster: bookmark.moviePoster,
-        // );
-
-        // For now, just mark as synced locally
+        
         await localStorageService.markBookmarkAsSynced(bookmark.id);
 
         _logger.info('Bookmark synced successfully: ${bookmark.movieTitle}');
       } catch (e) {
         _logger.warning('Failed to sync bookmark ${bookmark.movieTitle}: $e');
-        // Don't rethrow - continue syncing other bookmarks
+       
       }
     }
   }

@@ -23,6 +23,6 @@ Future<void> setupServiceLocator() async {
     ),
   );
 
-  // Initialize background sync service
+
   await BackgroundSyncService.initialize();
 }

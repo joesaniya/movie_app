@@ -21,7 +21,7 @@ void main() async {
 
   await setupServiceLocator();
 
-  // Register periodic background sync
+
   await BackgroundSyncService.registerPeriodicSync();
 
   runApp(const MovieTaskApp());

@@ -153,12 +153,12 @@ class BookmarkProvider extends ChangeNotifier {
   void _onConnectivityChanged() {
     final isNowOnline = _connectivityService.isOnline;
 
-    // When device comes back online, reload bookmarks to reflect synced status
+    
     if (_wasOffline && isNowOnline) {
       _logger.info(
         'Device came online, scheduling bookmarks reload after sync completes',
       );
-      // Wait a short time to allow sync service to complete marking bookmarks as synced
+     
       Future.delayed(const Duration(seconds: 1), () {
         if (_currentUserId != null) {
           _logger.info('Reloading bookmarks for user: $_currentUserId');

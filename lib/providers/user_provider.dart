@@ -34,20 +34,19 @@ class PaginatedUsersProvider extends ChangeNotifier {
     final apiUsers = _users;
     final apiUserIds = apiUsers.map((u) => u.id).toSet();
 
-    // Include unsynced local users and synced users that don't exist in API users
-    // This prevents duplicates when a user is created online and stored locally
+  
     final localUsersList = _localUsers
         .where((lu) {
-          // Always include unsynced users
+        
           if (!lu.isSynced) return true;
 
-          // For synced users, exclude if they have an API ID that matches an API user
+          
           if (lu.apiId != null) {
             final localUserId = int.tryParse(lu.apiId!);
             return !apiUserIds.contains(localUserId);
           }
 
-          // Include synced users without API ID
+         
           return true;
         })
         .map((lu) {
@@ -66,8 +65,7 @@ class PaginatedUsersProvider extends ChangeNotifier {
         })
         .toList();
 
-    // Return local users first, then API users (local users take precedence as they're freshest)
-    return [...localUsersList, ...apiUsers];
+  return [...localUsersList, ...apiUsers];
   }
 
   List<User> get users => _users;
@@ -293,12 +291,12 @@ class PaginatedUsersProvider extends ChangeNotifier {
   void _onConnectivityChanged() {
     final isNowOnline = _connectivityService.isOnline;
 
-    // When device comes back online, reload local users to reflect synced status
+
     if (_wasOffline && isNowOnline) {
       _logger.info(
         'Device came online, reloading local users to reflect synced status',
       );
-      // Wait a short time to allow sync service to complete
+      
       Future.delayed(const Duration(seconds: 1), () {
         _logger.info('Reloading local users');
         loadLocalUsers();

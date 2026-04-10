@@ -40,27 +40,25 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
         listen: false,
       );
 
-      // Determine which bookmark to use for offline support
-      Bookmark? bookmarkToUse = widget.bookmark;
+    Bookmark? bookmarkToUse = widget.bookmark;
 
-      // If no bookmark was passed in, try to find one for this movie
+      
       if (bookmarkToUse == null) {
         final userBookmarks = bookmarkProvider.bookmarks
             .where((b) => b.userId == widget.userId)
             .toList();
-        // Find bookmark for this movie
+        
         try {
           bookmarkToUse = userBookmarks.firstWhere(
             (b) => b.movieImdbId == widget.imdbId,
           );
         } catch (e) {
-          // No bookmark found for this movie
+         
           bookmarkToUse = null;
         }
       }
 
-      // If we have bookmark data with movie details, load from bookmark (for offline support)
-      if (bookmarkToUse != null && bookmarkToUse.movieYear != null) {
+  if (bookmarkToUse != null && bookmarkToUse.movieYear != null) {
         movieDetailProvider.loadMovieDetailFromBookmark(
           title: bookmarkToUse.movieTitle,
           year: bookmarkToUse.movieYear ?? '',
@@ -76,14 +74,14 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
           imdbRating: bookmarkToUse.imdbRating,
         );
       } else {
-        // If no bookmark, try to load from cache first
+       
         movieDetailProvider.loadFromCacheIfAvailable(imdbId: widget.imdbId);
       }
 
-      // Fetch updated movie details from API
+
       movieDetailProvider.fetchMovieDetail(imdbId: widget.imdbId);
 
-      // Load user's bookmarks to ensure bookmark state is available
+     
       bookmarkProvider.loadUserBookmarks(widget.userId);
     });
   }
@@ -100,7 +98,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
             );
           }
 
-          // Show error only if no movie detail is available
+          
           if (movieDetailProvider.movieDetail == null) {
             return loading_widgets.ErrorWidget(
               message:
@@ -115,7 +113,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
 
           return Column(
             children: [
-              // Show offline indicator at the top
+            
               if (isOfflineData)
                 Container(
                   padding: const EdgeInsets.symmetric(

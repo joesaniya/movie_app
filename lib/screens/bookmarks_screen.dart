@@ -103,7 +103,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
 
           return Column(
             children: [
-              // Search Bar
+             
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: TextField(
@@ -133,7 +133,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                   },
                 ),
               ),
-              // Bookmarks Count
+             
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Row(
@@ -148,7 +148,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              // Bookmarks List/Grid
+            
               Expanded(
                 child: filteredBookmarks.isEmpty
                     ? Center(
@@ -217,7 +217,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Poster
+           
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
@@ -239,7 +239,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                     : const Center(child: Icon(Icons.movie, size: 48)),
               ),
             ),
-            // Title and Remove Button
+            
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: Column(

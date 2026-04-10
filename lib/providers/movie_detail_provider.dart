@@ -30,9 +30,9 @@ class MovieDetailProvider extends ChangeNotifier {
     try {
       _movieDetail = await _apiService.getMovieDetail(imdbId: imdbId);
 
-      // Check if API returned "movie not found"
+     
       if (_movieDetail?.response != 'True') {
-        // API couldn't find the movie - try cache
+        
         _logger.warning('Movie not found in API: $imdbId, checking cache...');
         final cachedDetail = await _localStorageService.getCachedMovieDetail(
           imdbId,
@@ -53,7 +53,7 @@ class MovieDetailProvider extends ChangeNotifier {
     } catch (e) {
       _logger.warning('Failed to load movie from API: $e, trying cache...');
 
-      // Try to load from cache when offline or API error
+      
       try {
         final cachedDetail = await _localStorageService.getCachedMovieDetail(
           imdbId,
@@ -79,7 +79,7 @@ class MovieDetailProvider extends ChangeNotifier {
     }
   }
 
-  /// Load movie detail from bookmark data (for offline viewing)
+ 
   void loadMovieDetailFromBookmark({
     required String title,
     required String year,
@@ -115,8 +115,7 @@ class MovieDetailProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Load movie detail from cache if available (without requiring API call)
-  /// This is called when there's no bookmark but cache might exist
+ 
   Future<void> loadFromCacheIfAvailable({required String imdbId}) async {
     try {
       final cachedDetail = await _localStorageService.getCachedMovieDetail(
@@ -132,7 +131,7 @@ class MovieDetailProvider extends ChangeNotifier {
       }
     } catch (e) {
       _logger.warning('Could not load from cache: $e');
-      // Continue anyways, will attempt API fetch
+     
     }
   }
 

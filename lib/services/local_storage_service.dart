@@ -29,7 +29,7 @@ class LocalStorageService {
     }
   }
 
-  /// Ensure service is initialized before accessing boxes
+
   Future<void> _ensureInitialized() async {
     if (!_isInitialized) {
       await initialize();
@@ -219,7 +219,7 @@ class LocalStorageService {
     }
   }
 
-  /// Cache movie detail locally
+
   Future<void> cacheMovieDetail(MovieDetail movieDetail) async {
     await _ensureInitialized();
     final movieData = movieDetail.toJson();
@@ -227,7 +227,7 @@ class LocalStorageService {
     await _movieDetailsBox.put(movieDetail.imdbId, movieData);
   }
 
-  /// Retrieve cached movie detail
+  
   Future<MovieDetail?> getCachedMovieDetail(String imdbId) async {
     await _ensureInitialized();
     final movieData = _movieDetailsBox.get(imdbId);
@@ -235,33 +235,32 @@ class LocalStorageService {
     try {
       return MovieDetail.fromJson(movieData.cast<String, dynamic>());
     } catch (e) {
-      // If deserialization fails, return null
+    
       return null;
     }
   }
 
-  /// Get all cached movie details
-  Future<List<MovieDetail>> getAllCachedMovieDetails() async {
+ Future<List<MovieDetail>> getAllCachedMovieDetails() async {
     await _ensureInitialized();
     final movieDetails = <MovieDetail>[];
     for (final entry in _movieDetailsBox.values) {
       try {
         movieDetails.add(MovieDetail.fromJson(entry.cast<String, dynamic>()));
       } catch (e) {
-        // Skip corrupted entries
+     
         continue;
       }
     }
     return movieDetails;
   }
 
-  /// Check if a movie detail is cached
+ 
   Future<bool> isMovieDetailCached(String imdbId) async {
     await _ensureInitialized();
     return _movieDetailsBox.containsKey(imdbId);
   }
 
-  /// Clear movie details cache
+
   Future<void> clearMovieDetailsCache() async {
     await _ensureInitialized();
     await _movieDetailsBox.clear();

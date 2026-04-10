@@ -63,9 +63,7 @@ class ApiService {
     }
   }
 
-  /// Create user with simple name and job fields (Reqres API format)
-  /// POST https://reqres.in/api/users
-  /// Request: {"name": "morpheus", "job": "leader"}
+ 
   Future<Map<String, dynamic>> createUserSimple({
     required String name,
     required String job,
@@ -84,7 +82,7 @@ class ApiService {
     }
   }
 
-  /// Create user with full details (legacy method)
+ 
   Future<CreateUserResponse> createUser({
     required String firstName,
     required String lastName,
@@ -158,13 +156,13 @@ class ApiService {
       );
       final movieDetail = MovieDetail.fromJson(response.data);
 
-      // Check if the API returned a "not found" response
+     
       if (movieDetail.response != 'True') {
         _logger.warning(
           'API returned "not found" response for: $imdbId, checking cache...',
         );
 
-        // Try to get from cache first
+       
         final cachedDetail = await _localStorageService.getCachedMovieDetail(
           imdbId,
         );
@@ -173,14 +171,14 @@ class ApiService {
           return cachedDetail;
         }
 
-        // If no cache available, return mock data as fallback
+        
         _logger.warning(
           'No cached data available, using fallback data for: $imdbId',
         );
         return _getMockMovieDetail(imdbId);
       }
 
-      // Only cache successful responses
+    
       await _localStorageService.cacheMovieDetail(movieDetail);
 
       return movieDetail;
@@ -201,7 +199,7 @@ class ApiService {
           'Network/API error fetching movie detail (${e.type}), checking cache for: $imdbId',
         );
 
-        // Try to get from cache first
+      
         final cachedDetail = await _localStorageService.getCachedMovieDetail(
           imdbId,
         );
@@ -210,7 +208,7 @@ class ApiService {
           return cachedDetail;
         }
 
-        // If no cache available, return mock data as fallback
+        
         _logger.warning(
           'No cached data available, using fallback data for: $imdbId',
         );

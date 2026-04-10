@@ -30,7 +30,7 @@ class ConnectivityProvider extends ChangeNotifier {
   }
 
   void _triggerOfflineDataSync() {
-    // Perform immediate foreground sync when device goes online
+   
     _logger.info('Device went online, starting foreground sync...');
     final syncService = getIt<SyncService>();
     syncService
@@ -42,7 +42,7 @@ class ConnectivityProvider extends ChangeNotifier {
           _logger.severe('Foreground sync failed: $e');
         });
 
-    // Also schedule a background sync task for redundancy
+    
     BackgroundSyncService.scheduleImmediateSync().catchError((e) {
       _logger.warning('Failed to schedule background sync: $e');
     });

@@ -79,7 +79,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
   }
 
   void _performSearch(String? query) {
-    // Use controller text if query is not provided
+    
     final finalQuery = (query ?? _searchController.text).trim();
     log('Performing search with query: $finalQuery');
 
@@ -182,12 +182,12 @@ class _MovieListScreenState extends State<MovieListScreen> {
               child: TextField(
                 controller: _searchController,
                 onChanged: (value) {
-                  setState(() {}); // Trigger rebuild for suffix icon
-                  // Trigger search immediately as user types
+                  setState(() {});
+                 
                   _performSearch(value);
                 },
                 onSubmitted: (value) {
-                  // Also support submit for consistency
+                 
                   _performSearch(value);
                 },
                 decoration: InputDecoration(
@@ -353,10 +353,10 @@ class _MovieCardState extends State<MovieCard>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Poster Section with Overlay
+                
                   Stack(
                     children: [
-                      // Poster Image
+                     
                       Container(
                         width: double.infinity,
                         height: 220,
@@ -385,7 +385,7 @@ class _MovieCardState extends State<MovieCard>
                                 ),
                               ),
                       ),
-                      // Gradient Overlay
+                      
                       Container(
                         width: double.infinity,
                         height: 220,
@@ -400,7 +400,7 @@ class _MovieCardState extends State<MovieCard>
                           ),
                         ),
                       ),
-                      // Type Badge
+                      
                       Positioned(
                         top: 12,
                         right: 12,
@@ -434,13 +434,13 @@ class _MovieCardState extends State<MovieCard>
                     ],
                   ),
 
-                  // Movie Info Section
+                 
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Title
+                      
                         Text(
                           widget.movie.title,
                           style: Theme.of(context).textTheme.titleLarge
@@ -454,10 +454,10 @@ class _MovieCardState extends State<MovieCard>
 
                         const SizedBox(height: 12),
 
-                        // Year and IMDb ID Row
+                        
                         Row(
                           children: [
-                            // Calendar Icon + Year
+                           
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 10,
@@ -490,7 +490,7 @@ class _MovieCardState extends State<MovieCard>
                               ),
                             ),
                             const SizedBox(width: 8),
-                            // IMDb ID
+                          
                             Expanded(
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
@@ -530,11 +530,11 @@ class _MovieCardState extends State<MovieCard>
 
                         const SizedBox(height: 12),
 
-                        // Footer with CTA
+                       
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // View Details CTA
+                            
                             Expanded(
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
@@ -570,7 +570,7 @@ class _MovieCardState extends State<MovieCard>
                               ),
                             ),
                             const SizedBox(width: 12),
-                            // Bookmark Button
+                           
                             BookmarkButton(
                               userId: widget.userId,
                               movieImdbId: widget.movie.imdbId,

@@ -11,6 +11,7 @@ import 'providers/connectivity_provider.dart';
 import 'screens/user_list_screen.dart';
 import 'services/service_locator.dart';
 import 'services/background_sync_service.dart';
+import 'utils/animation_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

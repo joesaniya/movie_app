@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' show sin;
 
-/// Page route transitions with animations
+
 class AnimatedPageRoute<T> extends MaterialPageRoute<T> {
   AnimatedPageRoute({
     required WidgetBuilder builder,
@@ -36,7 +36,7 @@ class AnimatedPageRoute<T> extends MaterialPageRoute<T> {
   }
 }
 
-/// Pop route with slide animation
+
 class AnimatedPopRoute<T> extends MaterialPageRoute<T> {
   AnimatedPopRoute({
     required WidgetBuilder builder,
@@ -73,7 +73,7 @@ class AnimatedPopRoute<T> extends MaterialPageRoute<T> {
   }
 }
 
-/// Fade transition for page routes
+
 class FadePageRoute<T> extends MaterialPageRoute<T> {
   FadePageRoute({
     required WidgetBuilder builder,
@@ -101,7 +101,7 @@ class FadePageRoute<T> extends MaterialPageRoute<T> {
   }
 }
 
-/// Stagger animation helper for lists
+
 class ListAnimationHelper {
   static Future<void> animateListItems(
     List<GlobalKey<State<StatefulWidget>>> keys, {
@@ -115,7 +115,7 @@ class ListAnimationHelper {
   }
 }
 
-/// Scale and fade animation widget
+
 class ScaleAndFadeAnimation extends StatelessWidget {
   final Widget child;
   final Duration duration;
@@ -156,7 +156,7 @@ class ScaleAndFadeAnimation extends StatelessWidget {
   }
 }
 
-/// Slide and fade animation widget
+
 class SlideAndFadeAnimation extends StatelessWidget {
   final Widget child;
   final Duration duration;
@@ -192,7 +192,7 @@ class SlideAndFadeAnimation extends StatelessWidget {
   }
 }
 
-/// Hero animation for image transitions
+
 class HeroImageAnimation extends StatelessWidget {
   final String imageUrl;
   final String tag;
@@ -218,7 +218,6 @@ class HeroImageAnimation extends StatelessWidget {
   }
 }
 
-/// Shimmer loading animation
 class ShimmerAnimation extends StatelessWidget {
   final Widget child;
   final Duration duration;
@@ -257,7 +256,7 @@ class ShimmerAnimation extends StatelessWidget {
   }
 }
 
-/// Bounce animation
+
 class BounceAnimation extends StatelessWidget {
   final Widget child;
   final Duration duration;

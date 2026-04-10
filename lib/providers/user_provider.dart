@@ -57,7 +57,7 @@ class PaginatedUsersProvider extends ChangeNotifier {
             firstName: firstName,
             lastName: lastName,
             avatar: _generateAvatarUrl(firstName, lastName),
-            localId: lu.id, // Preserve the local UUID for offline users
+            localId: lu.id, 
           );
         })
         .toList();

@@ -81,13 +81,13 @@ class _UserListScreenState extends State<UserListScreen>
       backgroundColor: AppTheme.inkBlack,
       body: Stack(
         children: [
-          // Background gradient
+         
           Positioned.fill(
             child: Container(
               decoration: const BoxDecoration(gradient: AppTheme.pageGradient),
             ),
           ),
-          // Decorative film grain texture overlay (subtle)
+          
           Positioned.fill(
             child: Opacity(
               opacity: 0.03,
@@ -103,7 +103,7 @@ class _UserListScreenState extends State<UserListScreen>
           SafeArea(
             child: Column(
               children: [
-                // ── OFFLINE BANNER ──
+               
                 Consumer<ConnectivityProvider>(
                   builder: (ctx, conn, _) => Column(
                     children: [
@@ -114,10 +114,10 @@ class _UserListScreenState extends State<UserListScreen>
                   ),
                 ),
 
-                // ── HEADER ──
+                
                 FadeTransition(opacity: _headerFade, child: _buildHeader()),
 
-                // ── LIST ──
+                
                 Expanded(
                   child: Consumer<PaginatedUsersProvider>(
                     builder: (ctx, provider, _) {
@@ -214,7 +214,7 @@ class _UserListScreenState extends State<UserListScreen>
         children: [
           Row(
             children: [
-              // Logo mark
+             
               Container(
                 width: 34,
                 height: 34,
@@ -322,9 +322,7 @@ class _UserListScreenState extends State<UserListScreen>
   }
 }
 
-// ─────────────────────────────────────────────
-// USER CARD
-// ─────────────────────────────────────────────
+
 class UserCard extends StatefulWidget {
   final User user;
   final bool isLocal;
@@ -373,11 +371,11 @@ class _UserCardState extends State<UserCard> {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              // Avatar
+             
               _buildAvatar(),
               const SizedBox(width: 14),
 
-              // Info
+              
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

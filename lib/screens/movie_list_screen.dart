@@ -218,7 +218,7 @@ class _MovieListScreenState extends State<MovieListScreen>
               ],
             ),
           ),
-          // Bookmarks button
+         
           GestureDetector(
             onTap: () => Navigator.push(
               context,
@@ -337,9 +337,7 @@ class _MovieListScreenState extends State<MovieListScreen>
   }
 }
 
-// ─────────────────────────────────────────────
-// MOVIE CARD
-// ─────────────────────────────────────────────
+
 class MovieCard extends StatefulWidget {
   final Movie movie;
   final String userId;
@@ -404,9 +402,9 @@ class _MovieCardState extends State<MovieCard>
           ),
           child: Row(
             children: [
-              // Poster
+             
               _buildPoster(),
-              // Info
+             
               Expanded(child: _buildInfo()),
             ],
           ),
@@ -530,9 +528,7 @@ class _MovieCardState extends State<MovieCard>
   }
 }
 
-// ─────────────────────────────────────────────
-// BOOKMARK BUTTON
-// ─────────────────────────────────────────────
+
 class BookmarkButton extends StatelessWidget {
   final String userId;
   final String movieImdbId;

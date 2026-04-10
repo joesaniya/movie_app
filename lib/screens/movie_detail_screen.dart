@@ -148,11 +148,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> with TickerProvid
                     errorWidget: (_, __, ___) => _posterPlaceholder(),
                   )
                 : _posterPlaceholder(),
-            // Gradient fade to black
+           
             Container(
               decoration: BoxDecoration(gradient: AppTheme.posterGradient),
             ),
-            // IMDB score overlay
+           
             if (movie.imdbRating != null && movie.imdbRating != 'N/A')
               Positioned(
                 bottom: 16, left: 16,
@@ -216,11 +216,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> with TickerProvid
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
+         
           Text(movie.title, style: const TextStyle(fontFamily: 'PlayfairDisplay', fontSize: 30, fontWeight: FontWeight.w800, color: AppTheme.cream, letterSpacing: -0.5, height: 1.1)),
           const SizedBox(height: 10),
 
-          // Badges
+        
           Wrap(
             spacing: 8, runSpacing: 6,
             children: [
@@ -233,11 +233,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> with TickerProvid
           const GoldDivider(),
           const SizedBox(height: 20),
 
-          // Meta grid
+        
           _buildMetaGrid(movie),
           const SizedBox(height: 24),
 
-          // Genre
+         
           if (movie.genre != null && movie.genre != 'N/A') ...[
             const SectionHeader(title: 'Genres', icon: Icons.theater_comedy_rounded),
             const SizedBox(height: 10),
@@ -248,19 +248,19 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> with TickerProvid
             const SizedBox(height: 24),
           ],
 
-          // Director
+          
           if (movie.director != null && movie.director != 'N/A') ...[
             _buildTextSection('Director', movie.director!, Icons.camera_alt_rounded),
             const SizedBox(height: 16),
           ],
 
-          // Cast
+         
           if (movie.actors != null && movie.actors != 'N/A') ...[
             _buildTextSection('Cast', movie.actors!, Icons.people_outline_rounded),
             const SizedBox(height: 16),
           ],
 
-          // Synopsis
+         
           if (movie.plot != null && movie.plot != 'N/A') ...[
             const GoldDivider(label: 'SYNOPSIS'),
             const SizedBox(height: 14),
@@ -342,9 +342,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> with TickerProvid
   }
 }
 
-// ─────────────────────────────────────────────
-// BOOKMARK FLOATING BUTTON
-// ─────────────────────────────────────────────
+
 class BookmarkFloatingButton extends StatelessWidget {
   final String userId;
   final String movieImdbId;

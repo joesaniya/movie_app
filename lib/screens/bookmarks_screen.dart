@@ -79,16 +79,16 @@ class _BookmarksScreenState extends State<BookmarksScreen>
 
                 return Column(
                   children: [
-                    // Header
+                    
                     FadeTransition(
                       opacity: _headerFade,
                       child: _buildHeader(all.length),
                     ),
 
-                    // Search + Toggle
+                   
                     _buildSearchAndToggle(),
 
-                    // Count
+                  
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
                       child: Row(
@@ -118,7 +118,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
                       ),
                     ),
 
-                    // Content
+                   
                     Expanded(
                       child: all.isEmpty
                           ? const lw.EmptyWidget(
@@ -182,7 +182,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
             ],
           ),
           const Spacer(),
-          // View toggle
+         
           Container(
             decoration: BoxDecoration(
               color: AppTheme.graphite,
@@ -401,9 +401,7 @@ class _BookmarksScreenState extends State<BookmarksScreen>
   }
 }
 
-// ─────────────────────────────────────────────
-// GRID CARD
-// ─────────────────────────────────────────────
+
 class _GridCard extends StatelessWidget {
   final Bookmark bookmark;
   final VoidCallback onRemove;
@@ -435,7 +433,7 @@ class _GridCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Poster
+            
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(
@@ -519,9 +517,7 @@ class _GridCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// LIST CARD
-// ─────────────────────────────────────────────
+
 class _ListCard extends StatelessWidget {
   final Bookmark bookmark;
   final VoidCallback onRemove;
@@ -570,7 +566,7 @@ class _ListCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Poster
+            
             ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(AppTheme.radiusLg),
@@ -699,7 +695,7 @@ class _ListCard extends StatelessWidget {
                 ),
               ),
             ),
-            // Popup menu
+          
             PopupMenuButton<String>(
               color: AppTheme.charcoal,
               onSelected: (v) {

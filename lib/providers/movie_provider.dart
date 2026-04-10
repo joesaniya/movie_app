@@ -36,7 +36,7 @@ class PaginatedMoviesProvider extends ChangeNotifier {
 
   Future<void> _initializeData() async {
     try {
-      // Always load cached movies if available
+      
       final cachedMovies = await _localStorageService.getCachedTrendingMovies();
       if (cachedMovies.isNotEmpty) {
         _movies.addAll(cachedMovies);
@@ -57,10 +57,10 @@ class PaginatedMoviesProvider extends ChangeNotifier {
     final isNowOnline = _connectivityService.isOnline;
 
     if (_wasOffline && isNowOnline) {
-      // Device came online: refresh from API
+     
       getTrendingMovies(refresh: true);
     } else if (!_wasOffline && !isNowOnline) {
-      // Device went offline: load cached data if not already loaded
+     
       _loadOfflineMovies();
     }
 
@@ -110,7 +110,7 @@ class PaginatedMoviesProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // If offline and not refreshing, try to load from cache first
+     
       if (!_connectivityService.isOnline && !refresh) {
         log('Offline mode detected - attempting to load cached movies');
         final cachedMovies = await _localStorageService
@@ -127,7 +127,7 @@ class PaginatedMoviesProvider extends ChangeNotifier {
         }
       }
 
-      // Try to fetch from API
+      
       final response = await _apiService.getTrendingMovies(page: _currentPage);
 
       if (response.isSuccess && response.movies != null) {
@@ -137,7 +137,7 @@ class PaginatedMoviesProvider extends ChangeNotifier {
         _hasMore = _movies.length < _totalResults;
         _error = null;
 
-        // Cache the trending movies
+       
         await _localStorageService.cacheTrendingMovies(_movies).catchError((e) {
           log('Warning: Failed to cache trending movies: $e');
         });
@@ -148,7 +148,7 @@ class PaginatedMoviesProvider extends ChangeNotifier {
       } else {
         _error = response.error ?? 'Failed to fetch movies';
 
-        // Try to load from cache if online request fails
+        
         if (!_connectivityService.isOnline) {
           final cachedMovies = await _localStorageService
               .getCachedTrendingMovies();
@@ -161,7 +161,7 @@ class PaginatedMoviesProvider extends ChangeNotifier {
       }
     } catch (e) {
       log('Error fetching trending movies: $e');
-      // Load from cache on error
+      
       final cachedMovies = await _localStorageService.getCachedTrendingMovies();
       if (cachedMovies.isNotEmpty) {
         _movies.addAll(cachedMovies);
@@ -195,7 +195,6 @@ class PaginatedMoviesProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // If offline, try local search first
       if (!_connectivityService.isOnline) {
         log('Offline mode detected - attempting local search on cached movies');
         final localResults = await _performLocalSearch(query);
@@ -211,7 +210,7 @@ class PaginatedMoviesProvider extends ChangeNotifier {
         }
       }
 
-      // Try API search
+      
       final response = await _apiService.searchMovies(
         query: query,
         page: _currentPage,
@@ -224,7 +223,7 @@ class PaginatedMoviesProvider extends ChangeNotifier {
         _hasMore = _movies.length < _totalResults;
         _error = null;
 
-        // Cache the search results
+       
         await _localStorageService.cacheSearchMovies(query, _movies).catchError(
           (e) {
             log('Warning: Failed to cache search results: $e');
@@ -237,7 +236,7 @@ class PaginatedMoviesProvider extends ChangeNotifier {
       } else {
         _error = response.error ?? 'No movies found';
 
-        // Try to load from cache if online request fails
+        
         if (!_connectivityService.isOnline) {
           final cachedMovies = await _localStorageService.getCachedSearchMovies(
             query,
@@ -251,7 +250,7 @@ class PaginatedMoviesProvider extends ChangeNotifier {
       }
     } catch (e) {
       log('Error searching movies: $e');
-      // Load from cache on error
+     
       final cachedMovies = await _localStorageService.getCachedSearchMovies(
         query,
       );
@@ -273,7 +272,7 @@ class PaginatedMoviesProvider extends ChangeNotifier {
 
   Future<List<Movie>> _performLocalSearch(String query) async {
     try {
-      // Get cached trending movies to search locally
+     
       final allMovies = await _localStorageService.getCachedTrendingMovies();
 
       if (allMovies.isEmpty) {
@@ -281,7 +280,7 @@ class PaginatedMoviesProvider extends ChangeNotifier {
         return [];
       }
 
-      // Perform local search: match query against title and plot
+      
       final searchTerm = query.toLowerCase();
       final results = allMovies.where((movie) {
         final title = movie.title.toLowerCase();

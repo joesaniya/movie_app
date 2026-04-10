@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'app_theme.dart';
 
-// ─────────────────────────────────────────────
-// EDITORIAL CARD
-// ─────────────────────────────────────────────
+
 class EditorialCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -46,9 +44,7 @@ class EditorialCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// GOLD DIVIDER
-// ─────────────────────────────────────────────
+
 class GoldDivider extends StatelessWidget {
   final String? label;
   final double thickness;
@@ -80,9 +76,7 @@ class GoldDivider extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// FILM STRIP BADGE
-// ─────────────────────────────────────────────
+
 class FilmBadge extends StatelessWidget {
   final String label;
   final Color? color;
@@ -124,9 +118,7 @@ class FilmBadge extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// GOLD BUTTON
-// ─────────────────────────────────────────────
+
 class GoldButton extends StatefulWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -201,9 +193,7 @@ class _GoldButtonState extends State<GoldButton> with SingleTickerProviderStateM
   }
 }
 
-// ─────────────────────────────────────────────
-// OFFLINE BANNER
-// ─────────────────────────────────────────────
+
 class OfflineBanner extends StatelessWidget {
   final String? message;
   const OfflineBanner({super.key, this.message});
@@ -236,9 +226,7 @@ class OfflineBanner extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// CONNECTIVITY DOT
-// ─────────────────────────────────────────────
+
 class ConnectivityDot extends StatefulWidget {
   final bool isOnline;
   const ConnectivityDot({super.key, required this.isOnline});
@@ -296,9 +284,7 @@ class _ConnectivityDotState extends State<ConnectivityDot> with SingleTickerProv
   }
 }
 
-// ─────────────────────────────────────────────
-// SHIMMER LOADER
-// ─────────────────────────────────────────────
+
 class WarmShimmer extends StatefulWidget {
   final double width;
   final double height;
@@ -345,9 +331,7 @@ class _WarmShimmerState extends State<WarmShimmer> with SingleTickerProviderStat
   }
 }
 
-// ─────────────────────────────────────────────
-// BACK BUTTON
-// ─────────────────────────────────────────────
+
 class FilmBackButton extends StatelessWidget {
   final VoidCallback? onTap;
   const FilmBackButton({super.key, this.onTap});
@@ -369,9 +353,7 @@ class FilmBackButton extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// SECTION HEADER
-// ─────────────────────────────────────────────
+
 class SectionHeader extends StatelessWidget {
   final String title;
   final IconData? icon;
@@ -399,9 +381,7 @@ class SectionHeader extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// INFO ROW TILE
-// ─────────────────────────────────────────────
+
 class InfoTile extends StatelessWidget {
   final IconData icon;
   final String label;

@@ -174,15 +174,12 @@ class ApiService {
     return searchMovies(query: 'popular', page: page);
   }
 
-  /// Pre-caches movie details for a list of movies in the background.
-  /// This ensures all movies from search results are available offline.
-  /// Runs without blocking and silently ignores errors for individual movies.
   Future<void> preCacheMovieDetails(List<Movie> movies) async {
     if (movies.isEmpty) return;
 
     _logger.info('Starting to pre-cache details for ${movies.length} movies');
 
-    // Fetch all movie details concurrently with controlled rate limiting
+   
     final futures = <Future<void>>[];
     for (final movie in movies) {
       futures.add(
@@ -190,21 +187,20 @@ class ApiService {
           _logger.warning(
             'Failed to pre-cache details for ${movie.imdbId}: $e',
           );
-          // Silently ignore errors - we don't want to block the UI
+        
         }),
       );
     }
 
-    // Wait for all requests to complete (in parallel or with reasonable concurrency)
+ 
     await Future.wait(futures);
     _logger.info('Pre-caching complete for ${movies.length} movies');
   }
 
-  /// Fetches and caches a single movie detail.
-  /// Returns null if already cached or if fetch fails.
+ 
   Future<void> _fetchAndCacheMovieDetail(String imdbId) async {
     try {
-      // Check if already cached to avoid redundant API calls
+      
       final cached = await _localStorageService.getCachedMovieDetail(imdbId);
       if (cached != null) {
         _logger.info('Movie detail already cached: $imdbId');

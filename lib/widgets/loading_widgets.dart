@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../config/ui_components.dart';
 
-// ─────────────────────────────────────────────
-// LOADING WIDGET
-// ─────────────────────────────────────────────
+
 class LoadingWidget extends StatelessWidget {
   final String? message;
   final bool isSmall;
@@ -26,7 +24,7 @@ class LoadingWidget extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Film reel loader
+         
           SizedBox(
             width: 52, height: 52,
             child: Stack(
@@ -58,9 +56,7 @@ class LoadingWidget extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// ERROR WIDGET
-// ─────────────────────────────────────────────
+
 class ErrorWidget extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
@@ -123,9 +119,7 @@ class ErrorWidget extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// EMPTY WIDGET
-// ─────────────────────────────────────────────
+
 class EmptyWidget extends StatelessWidget {
   final String title;
   final String message;
@@ -177,9 +171,7 @@ class EmptyWidget extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// LOADING SHIMMER
-// ─────────────────────────────────────────────
+
 class LoadingShimmer extends StatelessWidget {
   final double? height;
   final double? width;
@@ -197,9 +189,7 @@ class LoadingShimmer extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// NO INTERNET WIDGET
-// ─────────────────────────────────────────────
+
 class NoInternetWidget extends StatelessWidget {
   const NoInternetWidget({super.key});
 
@@ -207,9 +197,7 @@ class NoInternetWidget extends StatelessWidget {
   Widget build(BuildContext context) => const OfflineBanner();
 }
 
-// ─────────────────────────────────────────────
-// CONNECTING INDICATOR
-// ─────────────────────────────────────────────
+
 class ConnectingIndicator extends StatelessWidget {
   final bool isVisible;
   const ConnectingIndicator({super.key, this.isVisible = true});

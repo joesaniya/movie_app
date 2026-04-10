@@ -1,14 +1,8 @@
 import 'package:flutter/material.dart';
 
-// ═══════════════════════════════════════════════
-// CINEPLEX — WARM EDITORIAL LUXURY THEME
-// Aesthetic: Film-noir meets modern editorial.
-// Palette: Warm charcoal, aged gold, cream, deep crimson.
-// Fonts: Playfair Display (display) + DM Sans (body)
-// ═══════════════════════════════════════════════
 
 class AppTheme {
-  // ── PALETTE ──────────────────────────────────
+ 
   static const Color inkBlack = Color(0xFF141210);
   static const Color charcoal = Color(0xFF1E1B18);
   static const Color graphite = Color(0xFF2C2822);
@@ -31,7 +25,7 @@ class AppTheme {
   static const Color jade = Color(0xFF3A7A5C);
   static const Color jadeSoft = Color(0xFF4A9A72);
 
-  // ── SEMANTIC ─────────────────────────────────
+
   static const Color primaryColor = gold;
   static const Color accentColor = crimson;
   static const Color successColor = jade;
@@ -41,13 +35,13 @@ class AppTheme {
   static const Color surfaceColor = charcoal;
   static const Color backgroundColor = inkBlack;
 
-  // ── TEXT ──────────────────────────────────────
+ 
   static const Color textPrimary = cream;
   static const Color textSecondary = canvas;
   static const Color textMuted = ashGray;
   static const Color textDisabled = dustGray;
 
-  // ── GRADIENTS ────────────────────────────────
+  
   static const LinearGradient pageGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -73,7 +67,6 @@ class AppTheme {
     stops: const [0.3, 0.7, 1.0],
   );
 
-  // ── SHADOWS ──────────────────────────────────
   static List<BoxShadow> get goldGlow => [
     BoxShadow(color: gold.withOpacity(0.25), blurRadius: 20, spreadRadius: 0),
     BoxShadow(color: gold.withOpacity(0.08), blurRadius: 40, spreadRadius: 4),
@@ -96,14 +89,14 @@ class AppTheme {
     ),
   ];
 
-  // ── BORDER RADIUS ────────────────────────────
+ 
   static const double radiusSm = 6.0;
   static const double radiusMd = 10.0;
   static const double radiusLg = 14.0;
   static const double radiusXl = 20.0;
   static const double radiusXxl = 28.0;
 
-  // ── THEME DATA ───────────────────────────────
+ 
   static ThemeData get theme => ThemeData(
     brightness: Brightness.dark,
     scaffoldBackgroundColor: inkBlack,

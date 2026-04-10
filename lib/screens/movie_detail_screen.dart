@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import '../models/movie_model.dart';
+import '../models/bookmark_model.dart';
 import '../providers/movie_detail_provider.dart';
 import '../providers/bookmark_provider.dart';
 import '../config/app_theme.dart';
@@ -10,12 +11,14 @@ import '../widgets/loading_widgets.dart' as loading_widgets;
 class MovieDetailScreen extends StatefulWidget {
   final String imdbId;
   final Movie? movie;
+  final Bookmark? bookmark;
   final String userId;
 
   const MovieDetailScreen({
     super.key,
     required this.imdbId,
     this.movie,
+    this.bookmark,
     required this.userId,
   });
 
@@ -28,10 +31,57 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<MovieDetailProvider>(
+      final movieDetailProvider = Provider.of<MovieDetailProvider>(
         context,
         listen: false,
-      ).fetchMovieDetail(imdbId: widget.imdbId);
+      );
+      final bookmarkProvider = Provider.of<BookmarkProvider>(
+        context,
+        listen: false,
+      );
+
+      // Determine which bookmark to use for offline support
+      Bookmark? bookmarkToUse = widget.bookmark;
+
+      // If no bookmark was passed in, try to find one for this movie
+      if (bookmarkToUse == null) {
+        final userBookmarks = bookmarkProvider.bookmarks
+            .where((b) => b.userId == widget.userId)
+            .toList();
+        // Find bookmark for this movie
+        try {
+          bookmarkToUse = userBookmarks.firstWhere(
+            (b) => b.movieImdbId == widget.imdbId,
+          );
+        } catch (e) {
+          // No bookmark found for this movie
+          bookmarkToUse = null;
+        }
+      }
+
+      // If we have bookmark data with movie details, load from bookmark (for offline support)
+      if (bookmarkToUse != null && bookmarkToUse.movieYear != null) {
+        movieDetailProvider.loadMovieDetailFromBookmark(
+          title: bookmarkToUse.movieTitle,
+          year: bookmarkToUse.movieYear ?? '',
+          imdbId: widget.imdbId,
+          rated: bookmarkToUse.movieRated,
+          released: bookmarkToUse.movieReleased,
+          runtime: bookmarkToUse.movieRuntime,
+          genre: bookmarkToUse.movieGenre,
+          director: bookmarkToUse.movieDirector,
+          actors: bookmarkToUse.movieActors,
+          plot: bookmarkToUse.moviePlot,
+          poster: bookmarkToUse.moviePoster,
+          imdbRating: bookmarkToUse.imdbRating,
+        );
+      }
+
+      // Fetch updated movie details from API
+      movieDetailProvider.fetchMovieDetail(imdbId: widget.imdbId);
+
+      // Load user's bookmarks to ensure bookmark state is available
+      bookmarkProvider.loadUserBookmarks(widget.userId);
     });
   }
 
@@ -69,7 +119,6 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-         
           Stack(
             children: [
               Container(
@@ -96,7 +145,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                         ),
                       ),
               ),
-              
+
               Positioned(
                 top: 16,
                 right: 16,
@@ -105,18 +154,25 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                   movieImdbId: movie.imdbId,
                   movieTitle: movie.title,
                   moviePoster: movie.poster ?? '',
+                  movieYear: movie.year,
+                  moviePlot: movie.plot,
+                  movieDirector: movie.director,
+                  movieActors: movie.actors,
+                  movieRated: movie.rated,
+                  movieRuntime: movie.runtime,
+                  movieReleased: movie.released,
+                  movieGenre: movie.genre,
+                  imdbRating: movie.imdbRating,
                 ),
               ),
             ],
           ),
 
-         
           Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                
                 Text(
                   movie.title,
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(
@@ -125,7 +181,6 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                 ),
                 const SizedBox(height: 12),
 
-             
                 Row(
                   children: [
                     Container(
@@ -178,7 +233,6 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                 ),
                 const SizedBox(height: 24),
 
-               
                 if (movie.rated != null && movie.rated != 'N/A')
                   _buildDetailItem(context, 'Rating', movie.rated!, Icons.flag),
                 const SizedBox(height: 16),
@@ -199,7 +253,6 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                   ),
                 const SizedBox(height: 24),
 
-               
                 if (movie.genre != null && movie.genre != 'N/A') ...[
                   Text(
                     'Genre',
@@ -229,19 +282,16 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                   const SizedBox(height: 24),
                 ],
 
-               
                 if (movie.director != null && movie.director != 'N/A') ...[
                   _buildDetailSection(context, 'Director', movie.director!),
                   const SizedBox(height: 16),
                 ],
 
-              
                 if (movie.actors != null && movie.actors != 'N/A') ...[
                   _buildDetailSection(context, 'Cast', movie.actors!),
                   const SizedBox(height: 16),
                 ],
 
-               
                 if (movie.plot != null && movie.plot != 'N/A') ...[
                   Text(
                     'Synopsis',
@@ -348,6 +398,15 @@ class BookmarkFloatingButton extends StatelessWidget {
   final String movieImdbId;
   final String movieTitle;
   final String moviePoster;
+  final String? movieYear;
+  final String? moviePlot;
+  final String? movieDirector;
+  final String? movieActors;
+  final String? movieRated;
+  final String? movieRuntime;
+  final String? movieReleased;
+  final String? movieGenre;
+  final String? imdbRating;
 
   const BookmarkFloatingButton({
     super.key,
@@ -355,6 +414,15 @@ class BookmarkFloatingButton extends StatelessWidget {
     required this.movieImdbId,
     required this.movieTitle,
     required this.moviePoster,
+    this.movieYear,
+    this.moviePlot,
+    this.movieDirector,
+    this.movieActors,
+    this.movieRated,
+    this.movieRuntime,
+    this.movieReleased,
+    this.movieGenre,
+    this.imdbRating,
   });
 
   @override
@@ -412,6 +480,15 @@ class BookmarkFloatingButton extends StatelessWidget {
                   movieImdbId: movieImdbId,
                   movieTitle: movieTitle,
                   moviePoster: moviePoster,
+                  movieYear: movieYear,
+                  moviePlot: moviePlot,
+                  movieDirector: movieDirector,
+                  movieActors: movieActors,
+                  movieRated: movieRated,
+                  movieRuntime: movieRuntime,
+                  movieReleased: movieReleased,
+                  movieGenre: movieGenre,
+                  imdbRating: imdbRating,
                 );
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(

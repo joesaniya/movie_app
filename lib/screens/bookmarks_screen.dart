@@ -205,6 +205,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
           MaterialPageRoute(
             builder: (context) => MovieDetailScreen(
               imdbId: bookmark.movieImdbId,
+              bookmark: bookmark,
               userId: widget.userId,
             ),
           ),
@@ -344,6 +345,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                 MaterialPageRoute(
                   builder: (context) => MovieDetailScreen(
                     imdbId: bookmark.movieImdbId,
+                    bookmark: bookmark,
                     userId: widget.userId,
                   ),
                 ),
@@ -379,6 +381,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
             MaterialPageRoute(
               builder: (context) => MovieDetailScreen(
                 imdbId: bookmark.movieImdbId,
+                bookmark: bookmark,
                 userId: widget.userId,
               ),
             ),

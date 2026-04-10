@@ -1,21 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
 import '../models/bookmark_model.dart';
 import '../services/local_storage_service.dart';
+import '../services/connectivity_service.dart';
 import '../services/service_locator.dart';
+
+final _logger = Logger('BookmarkProvider');
 
 class BookmarkProvider extends ChangeNotifier {
   final LocalStorageService _localStorageService = getIt<LocalStorageService>();
+  final ConnectivityService _connectivityService = getIt<ConnectivityService>();
 
   List<Bookmark> _bookmarks = [];
   Map<String, Set<String>> _userBookmarkedMovies = {};
   bool _isLoading = false;
   String? _error;
+  bool _wasOffline = false;
+  String? _currentUserId;
+
+  BookmarkProvider() {
+    _wasOffline = !_connectivityService.isOnline;
+    _connectivityService.addListener(_onConnectivityChanged);
+  }
 
   List<Bookmark> get bookmarks => _bookmarks;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
   Future<void> loadUserBookmarks(String userId) async {
+    _currentUserId = userId;
     _isLoading = true;
     notifyListeners();
 
@@ -44,6 +57,15 @@ class BookmarkProvider extends ChangeNotifier {
     required String movieImdbId,
     required String movieTitle,
     required String moviePoster,
+    String? movieYear,
+    String? moviePlot,
+    String? movieDirector,
+    String? movieActors,
+    String? movieRated,
+    String? movieRuntime,
+    String? movieReleased,
+    String? movieGenre,
+    String? imdbRating,
   }) async {
     try {
       final bookmark = await _localStorageService.bookmarkMovie(
@@ -51,6 +73,15 @@ class BookmarkProvider extends ChangeNotifier {
         movieImdbId: movieImdbId,
         movieTitle: movieTitle,
         moviePoster: moviePoster,
+        movieYear: movieYear,
+        moviePlot: moviePlot,
+        movieDirector: movieDirector,
+        movieActors: movieActors,
+        movieRated: movieRated,
+        movieRuntime: movieRuntime,
+        movieReleased: movieReleased,
+        movieGenre: movieGenre,
+        imdbRating: imdbRating,
       );
 
       _bookmarks.add(bookmark);
@@ -96,7 +127,6 @@ class BookmarkProvider extends ChangeNotifier {
       final bookmarks = await _localStorageService.getAllBookmarks();
       _bookmarks = bookmarks;
 
-
       _userBookmarkedMovies.clear();
       for (final bookmark in bookmarks) {
         if (!_userBookmarkedMovies.containsKey(bookmark.userId)) {
@@ -118,5 +148,34 @@ class BookmarkProvider extends ChangeNotifier {
     _isLoading = false;
     _error = null;
     notifyListeners();
+  }
+
+  void _onConnectivityChanged() {
+    final isNowOnline = _connectivityService.isOnline;
+
+    // When device comes back online, reload bookmarks to reflect synced status
+    if (_wasOffline && isNowOnline) {
+      _logger.info(
+        'Device came online, scheduling bookmarks reload after sync completes',
+      );
+      // Wait a short time to allow sync service to complete marking bookmarks as synced
+      Future.delayed(const Duration(seconds: 1), () {
+        if (_currentUserId != null) {
+          _logger.info('Reloading bookmarks for user: $_currentUserId');
+          loadUserBookmarks(_currentUserId!);
+        } else {
+          _logger.info('Reloading all bookmarks');
+          loadAllBookmarks();
+        }
+      });
+    }
+
+    _wasOffline = !isNowOnline;
+  }
+
+  @override
+  void dispose() {
+    _connectivityService.removeListener(_onConnectivityChanged);
+    super.dispose();
   }
 }

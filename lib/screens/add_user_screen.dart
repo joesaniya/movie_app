@@ -84,7 +84,6 @@ class _AddUserScreenState extends State<AddUserScreen> {
           _jobController.clear();
         });
       } else {
-        
         await usersProvider.createLocalUser(name: name, job: job);
         setState(() {
           _successMessage = 'User created offline. Will sync when online.';

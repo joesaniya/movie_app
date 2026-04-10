@@ -25,11 +25,18 @@ class LocalStorageService {
     }
   }
 
- 
+  /// Ensure service is initialized before accessing boxes
+  Future<void> _ensureInitialized() async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+  }
+
   Future<LocalUser> createUser({
     required String name,
     required String job,
   }) async {
+    await _ensureInitialized();
     final user = LocalUser(
       id: const Uuid().v4(),
       name: name,
@@ -47,6 +54,7 @@ class LocalStorageService {
     required String job,
     required String apiId,
   }) async {
+    await _ensureInitialized();
     final user = LocalUser(
       id: const Uuid().v4(),
       name: name,
@@ -61,12 +69,14 @@ class LocalStorageService {
   }
 
   Future<LocalUser?> getUserById(String userId) async {
+    await _ensureInitialized();
     final userData = _usersBox.get(userId);
     if (userData == null) return null;
     return LocalUser.fromJson(userData.cast<String, dynamic>());
   }
 
   Future<List<LocalUser>> getAllUsers() async {
+    await _ensureInitialized();
     final users = <LocalUser>[];
     for (final entry in _usersBox.values) {
       users.add(LocalUser.fromJson(entry.cast<String, dynamic>()));
@@ -75,6 +85,7 @@ class LocalStorageService {
   }
 
   Future<List<LocalUser>> getUnsyncedUsers() async {
+    await _ensureInitialized();
     final unsyncedUsers = <LocalUser>[];
     for (final entry in _usersBox.values) {
       final user = LocalUser.fromJson(entry.cast<String, dynamic>());
@@ -89,6 +100,7 @@ class LocalStorageService {
     required String userId,
     required String apiId,
   }) async {
+    await _ensureInitialized();
     final userData = _usersBox.get(userId);
     if (userData != null) {
       final user = LocalUser.fromJson(userData.cast<String, dynamic>());
@@ -98,16 +110,26 @@ class LocalStorageService {
   }
 
   Future<void> deleteUser(String userId) async {
+    await _ensureInitialized();
     await _usersBox.delete(userId);
   }
 
- 
   Future<Bookmark> bookmarkMovie({
     required String userId,
     required String movieImdbId,
     required String movieTitle,
     required String moviePoster,
+    String? movieYear,
+    String? moviePlot,
+    String? movieDirector,
+    String? movieActors,
+    String? movieRated,
+    String? movieRuntime,
+    String? movieReleased,
+    String? movieGenre,
+    String? imdbRating,
   }) async {
+    await _ensureInitialized();
     final bookmark = Bookmark(
       id: const Uuid().v4(),
       userId: userId,
@@ -116,6 +138,15 @@ class LocalStorageService {
       moviePoster: moviePoster,
       createdAt: DateTime.now(),
       isSynced: false,
+      movieYear: movieYear,
+      moviePlot: moviePlot,
+      movieDirector: movieDirector,
+      movieActors: movieActors,
+      movieRated: movieRated,
+      movieRuntime: movieRuntime,
+      movieReleased: movieReleased,
+      movieGenre: movieGenre,
+      imdbRating: imdbRating,
     );
 
     await _bookmarksBox.put(bookmark.id, bookmark.toJson());
@@ -123,10 +154,12 @@ class LocalStorageService {
   }
 
   Future<void> removeBookmark(String bookmarkId) async {
+    await _ensureInitialized();
     await _bookmarksBox.delete(bookmarkId);
   }
 
   Future<List<Bookmark>> getUserBookmarks(String userId) async {
+    await _ensureInitialized();
     final bookmarks = <Bookmark>[];
     for (final entry in _bookmarksBox.values) {
       final bookmark = Bookmark.fromJson(entry.cast<String, dynamic>());
@@ -138,6 +171,7 @@ class LocalStorageService {
   }
 
   Future<List<Bookmark>> getAllBookmarks() async {
+    await _ensureInitialized();
     final bookmarks = <Bookmark>[];
     for (final entry in _bookmarksBox.values) {
       bookmarks.add(Bookmark.fromJson(entry.cast<String, dynamic>()));
@@ -146,6 +180,7 @@ class LocalStorageService {
   }
 
   Future<List<Bookmark>> getUnsyncedBookmarks() async {
+    await _ensureInitialized();
     final unsyncedBookmarks = <Bookmark>[];
     for (final entry in _bookmarksBox.values) {
       final bookmark = Bookmark.fromJson(entry.cast<String, dynamic>());
@@ -160,6 +195,7 @@ class LocalStorageService {
     required String userId,
     required String movieImdbId,
   }) async {
+    await _ensureInitialized();
     for (final entry in _bookmarksBox.values) {
       final bookmark = Bookmark.fromJson(entry.cast<String, dynamic>());
       if (bookmark.userId == userId && bookmark.movieImdbId == movieImdbId) {
@@ -170,6 +206,7 @@ class LocalStorageService {
   }
 
   Future<void> markBookmarkAsSynced(String bookmarkId) async {
+    await _ensureInitialized();
     final bookmarkData = _bookmarksBox.get(bookmarkId);
     if (bookmarkData != null) {
       final bookmark = Bookmark.fromJson(bookmarkData.cast<String, dynamic>());
@@ -179,6 +216,7 @@ class LocalStorageService {
   }
 
   Future<void> clear() async {
+    await _ensureInitialized();
     await _usersBox.clear();
     await _bookmarksBox.clear();
   }

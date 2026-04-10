@@ -7,6 +7,17 @@ class Bookmark {
   final DateTime createdAt;
   final bool isSynced;
 
+  // Additional movie details for offline viewing
+  final String? movieYear;
+  final String? moviePlot;
+  final String? movieDirector;
+  final String? movieActors;
+  final String? movieRated;
+  final String? movieRuntime;
+  final String? movieReleased;
+  final String? movieGenre;
+  final String? imdbRating;
+
   Bookmark({
     required this.id,
     required this.userId,
@@ -15,6 +26,15 @@ class Bookmark {
     required this.moviePoster,
     required this.createdAt,
     this.isSynced = false,
+    this.movieYear,
+    this.moviePlot,
+    this.movieDirector,
+    this.movieActors,
+    this.movieRated,
+    this.movieRuntime,
+    this.movieReleased,
+    this.movieGenre,
+    this.imdbRating,
   });
 
   Bookmark copyWith({
@@ -25,6 +45,15 @@ class Bookmark {
     String? moviePoster,
     DateTime? createdAt,
     bool? isSynced,
+    String? movieYear,
+    String? moviePlot,
+    String? movieDirector,
+    String? movieActors,
+    String? movieRated,
+    String? movieRuntime,
+    String? movieReleased,
+    String? movieGenre,
+    String? imdbRating,
   }) {
     return Bookmark(
       id: id ?? this.id,
@@ -34,6 +63,15 @@ class Bookmark {
       moviePoster: moviePoster ?? this.moviePoster,
       createdAt: createdAt ?? this.createdAt,
       isSynced: isSynced ?? this.isSynced,
+      movieYear: movieYear ?? this.movieYear,
+      moviePlot: moviePlot ?? this.moviePlot,
+      movieDirector: movieDirector ?? this.movieDirector,
+      movieActors: movieActors ?? this.movieActors,
+      movieRated: movieRated ?? this.movieRated,
+      movieRuntime: movieRuntime ?? this.movieRuntime,
+      movieReleased: movieReleased ?? this.movieReleased,
+      movieGenre: movieGenre ?? this.movieGenre,
+      imdbRating: imdbRating ?? this.imdbRating,
     );
   }
 
@@ -45,6 +83,15 @@ class Bookmark {
     'moviePoster': moviePoster,
     'createdAt': createdAt.toIso8601String(),
     'isSynced': isSynced ? 1 : 0,
+    'movieYear': movieYear,
+    'moviePlot': moviePlot,
+    'movieDirector': movieDirector,
+    'movieActors': movieActors,
+    'movieRated': movieRated,
+    'movieRuntime': movieRuntime,
+    'movieReleased': movieReleased,
+    'movieGenre': movieGenre,
+    'imdbRating': imdbRating,
   };
 
   factory Bookmark.fromJson(Map<String, dynamic> json) => Bookmark(
@@ -55,6 +102,15 @@ class Bookmark {
     moviePoster: json['moviePoster'] as String,
     createdAt: DateTime.parse(json['createdAt'] as String),
     isSynced: (json['isSynced'] as int?) == 1,
+    movieYear: json['movieYear'] as String?,
+    moviePlot: json['moviePlot'] as String?,
+    movieDirector: json['movieDirector'] as String?,
+    movieActors: json['movieActors'] as String?,
+    movieRated: json['movieRated'] as String?,
+    movieRuntime: json['movieRuntime'] as String?,
+    movieReleased: json['movieReleased'] as String?,
+    movieGenre: json['movieGenre'] as String?,
+    imdbRating: json['imdbRating'] as String?,
   );
 }
 

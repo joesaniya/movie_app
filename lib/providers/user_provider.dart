@@ -1,15 +1,20 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
 import '../models/user_model.dart';
 import '../models/bookmark_model.dart';
 import '../services/api_service.dart';
 import '../services/local_storage_service.dart';
+import '../services/connectivity_service.dart';
 import '../services/service_locator.dart';
+
+final _logger = Logger('PaginatedUsersProvider');
 
 class PaginatedUsersProvider extends ChangeNotifier {
   final ApiService _apiService = getIt<ApiService>();
   final LocalStorageService _localStorageService = getIt<LocalStorageService>();
+  final ConnectivityService _connectivityService = getIt<ConnectivityService>();
 
   final List<User> _users = [];
   List<LocalUser> _localUsers = [];
@@ -18,25 +23,51 @@ class PaginatedUsersProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   bool _hasMore = true;
+  bool _wasOffline = false;
+
+  PaginatedUsersProvider() {
+    _wasOffline = !_connectivityService.isOnline;
+    _connectivityService.addListener(_onConnectivityChanged);
+  }
 
   List<User> get allUsers {
     final apiUsers = _users;
+    final apiUserIds = apiUsers.map((u) => u.id).toSet();
 
-    final unsyncedLocalUsersList = _localUsers.where((lu) => !lu.isSynced).map((
-      lu,
-    ) {
-      final nameParts = lu.name.split(' ');
-      final firstName = nameParts.isNotEmpty ? nameParts.first : '';
-      final lastName = nameParts.length > 1 ? nameParts.skip(1).join(' ') : '';
-      return User(
-        email: lu.name,
-        firstName: firstName,
-        lastName: lastName,
-        avatar: _generateAvatarUrl(firstName, lastName),
-      );
-    }).toList();
+    // Include unsynced local users and synced users that don't exist in API users
+    // This prevents duplicates when a user is created online and stored locally
+    final localUsersList = _localUsers
+        .where((lu) {
+          // Always include unsynced users
+          if (!lu.isSynced) return true;
 
-    return [...unsyncedLocalUsersList, ...apiUsers];
+          // For synced users, exclude if they have an API ID that matches an API user
+          if (lu.apiId != null) {
+            final localUserId = int.tryParse(lu.apiId!);
+            return !apiUserIds.contains(localUserId);
+          }
+
+          // Include synced users without API ID
+          return true;
+        })
+        .map((lu) {
+          final nameParts = lu.name.split(' ');
+          final firstName = nameParts.isNotEmpty ? nameParts.first : '';
+          final lastName = nameParts.length > 1
+              ? nameParts.skip(1).join(' ')
+              : '';
+          return User(
+            id: lu.apiId != null ? int.tryParse(lu.apiId!) : null,
+            email: lu.name,
+            firstName: firstName,
+            lastName: lastName,
+            avatar: _generateAvatarUrl(firstName, lastName),
+          );
+        })
+        .toList();
+
+    // Return local users first, then API users (local users take precedence as they're freshest)
+    return [...localUsersList, ...apiUsers];
   }
 
   List<User> get users => _users;
@@ -48,7 +79,6 @@ class PaginatedUsersProvider extends ChangeNotifier {
   bool get hasMore => _hasMore;
 
   Future<void> fetchUsers({bool refresh = false}) async {
-    
     if (_isLoading) {
       return;
     }
@@ -71,12 +101,10 @@ class PaginatedUsersProvider extends ChangeNotifier {
       log('Fetched page ${response.page}: ${response.data.length} users');
       log('Total pages: ${response.totalPages}');
 
-      
       if (response.data.isNotEmpty) {
         _users.addAll(response.data);
       }
 
-      
       final nextPage = response.page + 1;
       _currentPage = nextPage;
       _totalPages = response.totalPages;
@@ -89,7 +117,6 @@ class PaginatedUsersProvider extends ChangeNotifier {
     } catch (e) {
       _error = 'Failed to load users: $e';
       log('Error fetching users: $e');
-
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -99,7 +126,7 @@ class PaginatedUsersProvider extends ChangeNotifier {
   Future<void> loadLocalUsers() async {
     try {
       _localUsers = await _localStorageService.getAllUsers();
-    log('Loaded ${_localUsers.length} local users');
+      log('Loaded ${_localUsers.length} local users');
       notifyListeners();
     } catch (e) {
       log('Warning: Failed to load local users: $e');
@@ -132,7 +159,6 @@ class PaginatedUsersProvider extends ChangeNotifier {
     }
   }
 
-
   Future<void> createUserOnlineSimple({
     required String name,
     required String job,
@@ -142,19 +168,17 @@ class PaginatedUsersProvider extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      
       final response = await _apiService.createUserSimple(name: name, job: job);
 
       log('User created on server with response: $response');
 
       final apiId = response['id']?.toString() ?? '';
 
-     
       final nameParts = name.split(' ');
       final firstName = nameParts.isNotEmpty ? nameParts.first : '';
       final lastName = nameParts.length > 1 ? nameParts.skip(1).join(' ') : '';
 
-  final newUser = User(
+      final newUser = User(
         id: int.tryParse(apiId),
         email: job,
         firstName: firstName,
@@ -162,9 +186,8 @@ class PaginatedUsersProvider extends ChangeNotifier {
         avatar: _generateAvatarUrl(firstName, lastName),
       );
 
-   _users.insert(0, newUser);
+      _users.insert(0, newUser);
 
-      
       await _localStorageService.createSyncedUser(
         name: name,
         job: job,
@@ -185,7 +208,6 @@ class PaginatedUsersProvider extends ChangeNotifier {
     }
   }
 
- 
   Future<User?> createUserOnline({
     required String firstName,
     required String lastName,
@@ -266,5 +288,29 @@ class PaginatedUsersProvider extends ChangeNotifier {
     _hasMore = true;
     log('Provider reset to initial state');
     notifyListeners();
+  }
+
+  void _onConnectivityChanged() {
+    final isNowOnline = _connectivityService.isOnline;
+
+    // When device comes back online, reload local users to reflect synced status
+    if (_wasOffline && isNowOnline) {
+      _logger.info(
+        'Device came online, reloading local users to reflect synced status',
+      );
+      // Wait a short time to allow sync service to complete
+      Future.delayed(const Duration(seconds: 1), () {
+        _logger.info('Reloading local users');
+        loadLocalUsers();
+      });
+    }
+
+    _wasOffline = !isNowOnline;
+  }
+
+  @override
+  void dispose() {
+    _connectivityService.removeListener(_onConnectivityChanged);
+    super.dispose();
   }
 }

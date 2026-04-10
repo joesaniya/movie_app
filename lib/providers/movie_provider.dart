@@ -2,18 +2,23 @@ import 'package:flutter/material.dart';
 import '../models/movie_model.dart';
 import '../services/api_service.dart';
 import '../services/service_locator.dart';
+import '../services/connectivity_service.dart';
+import '../services/local_storage_service.dart';
 import 'dart:developer';
 
 class PaginatedMoviesProvider extends ChangeNotifier {
   final ApiService _apiService = getIt<ApiService>();
+  final LocalStorageService _localStorageService = getIt<LocalStorageService>();
+  final ConnectivityService _connectivityService = getIt<ConnectivityService>();
 
-  List<Movie> _movies = [];
+  final List<Movie> _movies = [];
   int _currentPage = 1;
   int _totalResults = 0;
   bool _isLoading = false;
   String? _error;
   bool _hasMore = true;
   String _searchQuery = 'popular';
+  bool _wasOffline = false;
 
   List<Movie> get movies => _movies;
   int get currentPage => _currentPage;
@@ -22,6 +27,73 @@ class PaginatedMoviesProvider extends ChangeNotifier {
   String? get error => _error;
   bool get hasMore => _hasMore;
   String get searchQuery => _searchQuery;
+
+  PaginatedMoviesProvider() {
+    _wasOffline = !_connectivityService.isOnline;
+    _connectivityService.addListener(_onConnectivityChanged);
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    try {
+      // Always load cached movies if available
+      final cachedMovies = await _localStorageService.getCachedTrendingMovies();
+      if (cachedMovies.isNotEmpty) {
+        _movies.addAll(cachedMovies);
+        _totalResults = cachedMovies.length;
+        _hasMore = false;
+
+        if (_wasOffline) {
+          _error = 'Viewing cached movies (offline mode)';
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      log('Error initializing cached movies: $e');
+    }
+  }
+
+  void _onConnectivityChanged() {
+    final isNowOnline = _connectivityService.isOnline;
+
+    if (_wasOffline && isNowOnline) {
+      // Device came online: refresh from API
+      getTrendingMovies(refresh: true);
+    } else if (!_wasOffline && !isNowOnline) {
+      // Device went offline: load cached data if not already loaded
+      _loadOfflineMovies();
+    }
+
+    _wasOffline = !isNowOnline;
+  }
+
+  Future<void> _loadOfflineMovies() async {
+    try {
+      if (_movies.isEmpty) {
+        final cachedMovies = await _localStorageService
+            .getCachedTrendingMovies();
+        if (cachedMovies.isNotEmpty) {
+          _movies.clear();
+          _movies.addAll(cachedMovies);
+          _totalResults = cachedMovies.length;
+          _hasMore = false;
+          _error = 'Viewing cached movies (offline mode)';
+          notifyListeners();
+        }
+      } else {
+        _error = 'Viewing cached movies (offline mode)';
+        notifyListeners();
+      }
+    } catch (e) {
+      log('Error loading offline movies: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _connectivityService.removeListener(_onConnectivityChanged);
+    super.dispose();
+  }
 
   Future<void> getTrendingMovies({bool refresh = false}) async {
     if (!refresh && _isLoading) return;
@@ -38,6 +110,24 @@ class PaginatedMoviesProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // If offline and not refreshing, try to load from cache first
+      if (!_connectivityService.isOnline && !refresh) {
+        log('Offline mode detected - attempting to load cached movies');
+        final cachedMovies = await _localStorageService
+            .getCachedTrendingMovies();
+        if (cachedMovies.isNotEmpty) {
+          _movies.addAll(cachedMovies);
+          _totalResults = cachedMovies.length;
+          _currentPage = 1;
+          _hasMore = false;
+          _error = 'Viewing cached movies (offline mode)';
+          _isLoading = false;
+          notifyListeners();
+          return;
+        }
+      }
+
+      // Try to fetch from API
       final response = await _apiService.getTrendingMovies(page: _currentPage);
 
       if (response.isSuccess && response.movies != null) {
@@ -47,14 +137,39 @@ class PaginatedMoviesProvider extends ChangeNotifier {
         _hasMore = _movies.length < _totalResults;
         _error = null;
 
+        // Cache the trending movies
+        await _localStorageService.cacheTrendingMovies(_movies).catchError((e) {
+          log('Warning: Failed to cache trending movies: $e');
+        });
+
         _apiService.preCacheMovieDetails(response.movies!).catchError((e) {
           log('Warning: Failed to pre-cache movie details: $e');
         });
       } else {
         _error = response.error ?? 'Failed to fetch movies';
+
+        // Try to load from cache if online request fails
+        if (!_connectivityService.isOnline) {
+          final cachedMovies = await _localStorageService
+              .getCachedTrendingMovies();
+          if (cachedMovies.isNotEmpty) {
+            _movies.addAll(cachedMovies);
+            _error = 'Viewing cached movies (offline mode)';
+            _hasMore = false;
+          }
+        }
       }
     } catch (e) {
-      _error = 'Failed to load movies: $e';
+      log('Error fetching trending movies: $e');
+      // Load from cache on error
+      final cachedMovies = await _localStorageService.getCachedTrendingMovies();
+      if (cachedMovies.isNotEmpty) {
+        _movies.addAll(cachedMovies);
+        _error = 'Viewing cached movies (offline mode)';
+        _hasMore = false;
+      } else {
+        _error = 'Failed to load movies: $e';
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -80,6 +195,23 @@ class PaginatedMoviesProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // If offline, try local search first
+      if (!_connectivityService.isOnline) {
+        log('Offline mode detected - attempting local search on cached movies');
+        final localResults = await _performLocalSearch(query);
+        if (localResults.isNotEmpty) {
+          _movies.addAll(localResults);
+          _totalResults = localResults.length;
+          _currentPage = 1;
+          _hasMore = false;
+          _error = 'Searching offline - results from cached movies';
+          _isLoading = false;
+          notifyListeners();
+          return;
+        }
+      }
+
+      // Try API search
       final response = await _apiService.searchMovies(
         query: query,
         page: _currentPage,
@@ -92,17 +224,76 @@ class PaginatedMoviesProvider extends ChangeNotifier {
         _hasMore = _movies.length < _totalResults;
         _error = null;
 
+        // Cache the search results
+        await _localStorageService.cacheSearchMovies(query, _movies).catchError(
+          (e) {
+            log('Warning: Failed to cache search results: $e');
+          },
+        );
+
         _apiService.preCacheMovieDetails(response.movies!).catchError((e) {
           log('Warning: Failed to pre-cache movie details: $e');
         });
       } else {
         _error = response.error ?? 'No movies found';
+
+        // Try to load from cache if online request fails
+        if (!_connectivityService.isOnline) {
+          final cachedMovies = await _localStorageService.getCachedSearchMovies(
+            query,
+          );
+          if (cachedMovies.isNotEmpty) {
+            _movies.addAll(cachedMovies);
+            _error = 'Viewing cached search results (offline mode)';
+            _hasMore = false;
+          }
+        }
       }
     } catch (e) {
-      _error = 'Failed to search movies: $e';
+      log('Error searching movies: $e');
+      // Load from cache on error
+      final cachedMovies = await _localStorageService.getCachedSearchMovies(
+        query,
+      );
+      if (cachedMovies.isNotEmpty) {
+        _movies.addAll(cachedMovies);
+        _error = 'Viewing cached search results (offline mode)';
+        _hasMore = false;
+      } else if (!_connectivityService.isOnline) {
+        _error =
+            'No offline search available - search requires internet connection';
+      } else {
+        _error = 'Failed to search movies: $e';
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<List<Movie>> _performLocalSearch(String query) async {
+    try {
+      // Get cached trending movies to search locally
+      final allMovies = await _localStorageService.getCachedTrendingMovies();
+
+      if (allMovies.isEmpty) {
+        log('No cached movies available for local search');
+        return [];
+      }
+
+      // Perform local search: match query against title and plot
+      final searchTerm = query.toLowerCase();
+      final results = allMovies.where((movie) {
+        final title = movie.title.toLowerCase();
+        final plot = (movie.plot ?? '').toLowerCase();
+        return title.contains(searchTerm) || plot.contains(searchTerm);
+      }).toList();
+
+      log('Local search found ${results.length} results for "$query"');
+      return results;
+    } catch (e) {
+      log('Error performing local search: $e');
+      return [];
     }
   }
 

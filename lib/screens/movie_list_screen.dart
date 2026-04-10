@@ -38,7 +38,7 @@ class _MovieListScreenState extends State<MovieListScreen> {
     _searchController = TextEditingController();
     _scrollController.addListener(_onScroll);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final moviesProvider = Provider.of<PaginatedMoviesProvider>(
         context,
         listen: false,
@@ -48,8 +48,8 @@ class _MovieListScreenState extends State<MovieListScreen> {
         listen: false,
       );
 
-      moviesProvider.getTrendingMovies();
-      bookmarkProvider.loadUserBookmarks(widget.userId);
+      await moviesProvider.getTrendingMovies();
+      await bookmarkProvider.loadUserBookmarks(widget.userId);
     });
   }
 

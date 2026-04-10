@@ -9,11 +9,15 @@ class LocalStorageService {
   static const String _bookmarksBoxName = 'bookmarks';
   static const String _movieDetailsBoxName = 'movie_details';
   static const String _cachedApiUsersBoxName = 'cached_api_users';
+  static const String _cachedTrendingMoviesBoxName = 'cached_trending_movies';
+  static const String _cachedSearchMoviesBoxName = 'cached_search_movies';
 
   late Box<Map> _usersBox;
   late Box<Map> _bookmarksBox;
   late Box<Map> _movieDetailsBox;
   late Box<Map> _cachedApiUsersBox;
+  late Box<Map> _cachedTrendingMoviesBox;
+  late Box<Map> _cachedSearchMoviesBox;
 
   bool _isInitialized = false;
 
@@ -27,6 +31,12 @@ class LocalStorageService {
       _bookmarksBox = await Hive.openBox<Map>(_bookmarksBoxName);
       _movieDetailsBox = await Hive.openBox<Map>(_movieDetailsBoxName);
       _cachedApiUsersBox = await Hive.openBox<Map>(_cachedApiUsersBoxName);
+      _cachedTrendingMoviesBox = await Hive.openBox<Map>(
+        _cachedTrendingMoviesBoxName,
+      );
+      _cachedSearchMoviesBox = await Hive.openBox<Map>(
+        _cachedSearchMoviesBoxName,
+      );
       _isInitialized = true;
     } catch (e) {
       throw Exception('Failed to initialize local storage: $e');
@@ -263,14 +273,12 @@ class LocalStorageService {
     await _movieDetailsBox.clear();
   }
 
-  
   Future<void> cacheApiUsers(List<User> users) async {
     await _ensureInitialized();
     final userData = users.map((u) => u.toJson()).toList();
     await _cachedApiUsersBox.put('cached_users', {'users': userData});
   }
 
-  
   Future<List<User>> getCachedApiUsers() async {
     await _ensureInitialized();
     final cachedData = _cachedApiUsersBox.get('cached_users');
@@ -286,10 +294,53 @@ class LocalStorageService {
     }
   }
 
-  
   Future<void> clearCachedApiUsers() async {
     await _ensureInitialized();
     await _cachedApiUsersBox.clear();
+  }
+
+  Future<void> cacheTrendingMovies(List<Movie> movies) async {
+    await _ensureInitialized();
+    final movieData = movies.map((m) => m.toJson()).toList();
+    await _cachedTrendingMoviesBox.put('trending_movies', {
+      'movies': movieData,
+    });
+  }
+
+  Future<List<Movie>> getCachedTrendingMovies() async {
+    await _ensureInitialized();
+    final cachedData = _cachedTrendingMoviesBox.get('trending_movies');
+    if (cachedData == null) return [];
+
+    try {
+      final moviesList = cachedData['movies'] as List;
+      return moviesList
+          .map((m) => Movie.fromJson(m as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<void> cacheSearchMovies(String query, List<Movie> movies) async {
+    await _ensureInitialized();
+    final movieData = movies.map((m) => m.toJson()).toList();
+    await _cachedSearchMoviesBox.put(query, {'movies': movieData});
+  }
+
+  Future<List<Movie>> getCachedSearchMovies(String query) async {
+    await _ensureInitialized();
+    final cachedData = _cachedSearchMoviesBox.get(query);
+    if (cachedData == null) return [];
+
+    try {
+      final moviesList = cachedData['movies'] as List;
+      return moviesList
+          .map((m) => Movie.fromJson(m as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      return [];
+    }
   }
 
   Future<void> clear() async {
@@ -298,5 +349,7 @@ class LocalStorageService {
     await _bookmarksBox.clear();
     await _movieDetailsBox.clear();
     await _cachedApiUsersBox.clear();
+    await _cachedTrendingMoviesBox.clear();
+    await _cachedSearchMoviesBox.clear();
   }
 }

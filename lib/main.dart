@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
@@ -11,20 +12,24 @@ import 'providers/connectivity_provider.dart';
 import 'screens/user_list_screen.dart';
 import 'services/service_locator.dart';
 import 'services/background_sync_service.dart';
-
+import 'services/api_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
+  await dotenv.load();
+
+  // Initialize API service with keys from .env
+  await ApiService.initialize();
 
   await Hive.initFlutter();
 
   _setupLogging();
 
-  
   await BackgroundSyncService.initialize();
 
   await setupServiceLocator();
-
 
   await BackgroundSyncService.registerPeriodicSync();
 

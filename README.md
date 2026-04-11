@@ -136,10 +136,11 @@ User Input (Navigation, Forms, Button Clicks)
 
 ### OMDb API (Movie Discovery)
 - **Base URL**: `https://www.omdbapi.com`
-- **API Key**: `eac7cc99` (free tier for development)
+- **API Key**: Configured via `.env` file (free tier account)
 - **Search**: `GET /?s={query}&page={page}&type=movie`
 - **Details**: `GET /?i={imdbId}` for comprehensive movie information
 - **Usage**: Powers all movie search and discovery features
+- **Sign Up**: Get your free API key at https://www.omdbapi.com/apikey.aspx
 
 ## 📦 Offline & Sync Architecture
 
@@ -226,16 +227,28 @@ Bookmark {
 
 ```bash
 # 1. Clone the repository
-git clone hhttps://github.com/joesaniya/movie_app.git
+git clone https://github.com/joesaniya/movie_app.git
 cd movie_task_ap
 
-# 2. Get dependencies
+# 2. Configure environment variables
+# Copy the example .env file and add your API keys
+cp .env.example .env
+
+# Edit .env and add your API keys:
+# - OMDB_API_KEY: Get from https://www.omdbapi.com/apikey.aspx
+# - REQRES_API_KEY: For the ReqRes mock API
+```
+
+### Setup & Build
+
+```bash
+# 3. Get dependencies
 flutter pub get
 
-# 3. Generate Hive type adapters (required for persistence)
+# 4. Generate Hive type adapters (required for persistence)
 flutter packages pub run build_runner build --delete-conflicting-outputs
 
-# 4. Run the app
+# 5. Run the app
 flutter run
 
 # For Android APK release build:
@@ -244,6 +257,14 @@ flutter build apk --release
 # For Android App Bundle:
 flutter build appbundle --release
 ```
+
+### Environment Configuration
+The app uses a `.env` file for secure API key management:
+- **`.env`**: Local configuration file (not committed to Git)
+- **`.env.example`**: Template showing required variables
+- API keys are loaded at app startup via `flutter_dotenv` package
+- Missing API keys will throw an error and prevent app startup
+
 
 
 

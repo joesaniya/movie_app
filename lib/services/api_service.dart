@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:logging/logging.dart';
 import '../models/user_model.dart';
 import '../models/movie_model.dart';
@@ -12,8 +13,17 @@ final _logger = Logger('ApiService');
 class ApiService {
   static const String baseUrlUsers = 'https://reqres.in/api';
   static const String baseUrlMovies = 'https://www.omdbapi.com';
-  static const String movieApiKey = 'eac7cc99';
-  static const String reqresApiKey = 'reqres_e76eb59af1234a00ae6db056b038d1e1';
+  static late final String movieApiKey;
+  static late final String reqresApiKey;
+
+  static Future<void> initialize() async {
+    movieApiKey = dotenv.get('OMDB_API_KEY', fallback: '');
+    reqresApiKey = dotenv.get('REQRES_API_KEY', fallback: '');
+    
+    if (movieApiKey.isEmpty || reqresApiKey.isEmpty) {
+      throw Exception('API keys not configured. Please check your .env file.');
+    }
+  }
 
   late final Dio _dioUsers;
   late final Dio _dioMovies;

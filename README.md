@@ -245,11 +245,7 @@ flutter build apk --release
 flutter build appbundle --release
 ```
 
-### Configuration
-No API key configuration needed—the app uses public APIs:
-- OMDb API key is hardcoded (free tier: `eac7cc99`)
-- ReqRes API is fully accessible
-- Hive initialization happens automatically in `main.dart`
+
 
 ## 📋 Key Assumptions & Considerations
 
@@ -401,18 +397,15 @@ flutter run
 ## 🤝 Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss proposed changes.
 
-## 📝 License
-This project is open source. See LICENSE file for details.
 
 ## 👤 Author
-[Your Name/Organization]
+Esther Jenslin
 
-## 📧 Support
-For issues, questions, or feedback, please open an issue on GitHub.
+
 
 ---
 
-**Built with ❤️ using Flutter**
+**Built with using Flutter**
 
 ### UI Handling
 - Subtle "Reconnecting..." indicator instead of error dialogs

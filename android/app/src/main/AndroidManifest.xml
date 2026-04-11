@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <application
-        android:label="movie_task_ap"
+        android:label="CineMe"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
